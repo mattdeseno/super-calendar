@@ -634,11 +634,24 @@ class SuperCalendar {
             progressFill.style.width = `${Math.max(0, percentage)}%`;
             
             if (this.currentTime <= 0) {
-                if (this.config.autoResetTimer) {
-                    this.currentTime = this.config.timerDuration;
-                } else {
-                    clearInterval(this.timerInterval);
+                // Hide timer section when countdown reaches zero
+                const timerSection = document.querySelector(`#super-calendar-timer-${this.config.source}`);
+                if (timerSection) {
+                    timerSection.style.transition = 'opacity 0.5s ease, height 0.5s ease, margin 0.5s ease';
+                    timerSection.style.opacity = '0';
+                    timerSection.style.height = '0';
+                    timerSection.style.marginBottom = '0';
+                    timerSection.style.overflow = 'hidden';
+                    
+                    // Completely hide after animation
+                    setTimeout(() => {
+                        timerSection.style.display = 'none';
+                    }, 500);
                 }
+                
+                // Stop the timer
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
             }
         }, 1000);
     }

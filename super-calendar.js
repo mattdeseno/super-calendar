@@ -182,13 +182,14 @@ class SuperCalendar {
             }
 
             .super-calendar-v3 .timer-section {
-                background: linear-gradient(135deg, ${this.config.primaryColor} 0%, ${this.config.progressBarColor} 100%);
-                color: white;
+                background: #f3f4f6;
+                color: #374151;
                 padding: 18px 24px;
                 border-radius: 12px;
                 margin-bottom: 25px;
                 position: relative;
                 overflow: hidden;
+                border: 1px solid #e5e7eb;
             }
 
             .super-calendar-v3 .timer-content {
@@ -202,30 +203,31 @@ class SuperCalendar {
             .super-calendar-v3 .timer-text {
                 font-size: 16px;
                 font-weight: 600;
-                opacity: 0.95;
+                color: #374151;
             }
 
             .super-calendar-v3 .timer-display {
                 font-size: 20px;
                 font-weight: 700;
                 font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+                color: #111827;
             }
 
             .super-calendar-v3 .progress-bar {
                 position: absolute;
-                bottom: 0;
+                top: 0;
                 left: 0;
                 right: 0;
                 height: 4px;
-                background: rgba(255, 255, 255, 0.2);
+                background: #e5e7eb;
                 overflow: hidden;
             }
 
             .super-calendar-v3 .progress-fill {
                 height: 100%;
-                background: rgba(255, 255, 255, 0.8);
+                background: linear-gradient(135deg, ${this.config.primaryColor} 0%, ${this.config.progressBarColor} 100%);
                 transition: width 1s linear;
-                border-radius: 0 2px 2px 0;
+                border-radius: 0;
             }
 
             .super-calendar-v3 .dates-section {

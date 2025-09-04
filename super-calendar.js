@@ -1,385 +1,393 @@
 /**
- * Super Calendar Widget
- * A powerful scheduling widget with countdown timer and pattern interrupt functionality
+ * Super Calendar Widget v3.0
+ * A professional scheduling widget with configurable buttons
+ * Designed to match the original iClosed widget styling
  */
 
 class SuperCalendar {
     constructor(config = {}) {
         this.config = {
             // Container
-            container: '#super-calendar',
+            container: config.container || '#super-calendar',
             
-            // Profile Settings
-            profileName: 'Ismael',
-            profileTitle: 'CEO iClosed',
-            profileAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            showOnlineIndicator: true,
+            // Profile settings
+            profileName: config.profileName || 'Demo User',
+            profileTitle: config.profileTitle || 'Demo Title',
+            profileAvatar: config.profileAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+            showOnlineIndicator: config.showOnlineIndicator !== false,
             
-            // Content
-            mainHeading: "Your Funnel's Fine — Until the Calendar Kills It",
-            mainDescription: "Fix your funnel with iClosed Scheduler. Saves leads drop-offs and filters out unqualified bookings 🔥",
+            // Content settings
+            mainHeading: config.mainHeading || 'Your Funnel\'s Fine — Until the Calendar Kills It',
+            mainDescription: config.mainDescription || 'Fix your funnel with iClosed Scheduler. Saves leads drop-offs and filters out unqualified bookings 🔥',
             
-            // Timer Settings
-            timerDuration: 180, // 3 minutes in seconds
-            timerText: "Only few slots are left.",
-            autoReset: true,
+            // Timer settings
+            timerDuration: config.timerDuration || 180,
+            timerText: config.timerText || 'Only few slots are left.',
+            autoResetTimer: config.autoResetTimer !== false,
             
-            // Buttons
-            primaryButtonText: "Schedule a demo",
-            secondaryButtonText: "Start Free Trial",
-            showSecondaryButton: true,
+            // Button configuration
+            buttons: config.buttons || [
+                {
+                    text: 'Schedule a demo',
+                    style: 'primary',
+                    action: 'popup',
+                    url: 'https://your-landing-page.com/popup'
+                },
+                {
+                    text: 'Start Free Trial',
+                    style: 'secondary',
+                    action: 'redirect',
+                    url: 'https://your-landing-page.com/trial'
+                }
+            ],
             
-            // Theme Colors
-            primaryColor: '#1e3a8a',
-            progressBarColor: '#3b82f6',
-            backgroundColor: '#ffffff',
-            textColor: '#1f2937',
-            
-            // Pattern Interrupt Settings
-            popupUrl: '', // URL to open in popup
-            redirectUrl: '', // URL to redirect to
-            openInNewTab: false, // Open in new tab instead of popup
-            
-            // Footer
-            poweredByText: 'Powered by iClosed',
-            poweredByLogo: '',
-            showFooter: true,
+            // Styling
+            primaryColor: config.primaryColor || '#1e3a8a',
+            progressBarColor: config.progressBarColor || '#3b82f6',
+            backgroundColor: config.backgroundColor || '#ffffff',
+            textColor: config.textColor || '#374151',
             
             // Behavior
-            showCloseButton: true,
-            dateRange: 5, // Number of days to show
+            dateRange: config.dateRange || 5,
+            showCloseButton: config.showCloseButton !== false,
+            showFooter: config.showFooter !== false,
+            poweredByText: config.poweredByText || 'Powered by iClosed',
             
             // Callbacks
-            onDateSelect: null,
-            onPrimaryClick: null,
-            onSecondaryClick: null,
-            onClose: null,
-            onTimerEnd: null,
+            onDateSelect: config.onDateSelect || null,
+            onButtonClick: config.onButtonClick || null,
+            onClose: config.onClose || null,
             
-            ...config
+            // Source tracking
+            source: config.source || 'super-calendar'
         };
         
-        this.selectedDate = null;
         this.timerInterval = null;
         this.currentTime = this.config.timerDuration;
-        this.isInitialized = false;
+        this.selectedDate = null;
     }
     
     init() {
-        if (this.isInitialized) return;
-        
-        // Inject CSS styles
         this.injectStyles();
-        
-        const container = document.querySelector(this.config.container);
-        if (!container) {
-            console.error('Pattern Interrupt Widget: Container not found');
-            return;
-        }
-        
-        this.container = container;
         this.render();
         this.bindEvents();
         this.startTimer();
-        this.isInitialized = true;
         
-        console.log('Super Calendar initialized');
+        console.log('Super Calendar v3.0 initialized');
     }
     
     injectStyles() {
-        if (!document.getElementById('super-calendar-styles')) {
-            const style = document.createElement('style');
-            style.id = 'super-calendar-styles';
-            style.textContent = this.getCSS();
-            document.head.appendChild(style);
-        }
-    }
-    
-    getCSS() {
-        return `
-            .super-calendar {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: ${this.config.backgroundColor};
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-                max-width: 400px;
+        if (document.getElementById('super-calendar-styles-v3')) return;
+        
+        const styles = `
+            .super-calendar-v3 {
+                max-width: 420px;
                 margin: 0 auto;
+                background: ${this.config.backgroundColor};
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
                 overflow: hidden;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
                 position: relative;
-                color: ${this.config.textColor};
+                border: 1px solid rgba(0, 0, 0, 0.08);
             }
-            
-            .widget-header {
-                padding: 20px;
+
+            .super-calendar-v3 .close-button {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background: rgba(0, 0, 0, 0.05);
+                border: none;
+                border-radius: 50%;
+                width: 32px;
+                height: 32px;
+                cursor: pointer;
+                font-size: 18px;
+                color: #6b7280;
+                z-index: 10;
                 display: flex;
                 align-items: center;
-                justify-content: space-between;
-                border-bottom: 1px solid #e5e7eb;
+                justify-content: center;
+                transition: background 0.2s;
             }
-            
-            .profile-section {
+
+            .super-calendar-v3 .close-button:hover {
+                background: rgba(0, 0, 0, 0.1);
+            }
+
+            .super-calendar-v3 .profile-section {
+                padding: 30px 30px 25px;
+                border-bottom: 1px solid #f3f4f6;
+            }
+
+            .super-calendar-v3 .profile-info {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 15px;
+                margin-bottom: 0;
             }
-            
-            .profile-avatar {
-                position: relative;
-                width: 48px;
-                height: 48px;
-            }
-            
-            .avatar-image {
-                width: 100%;
-                height: 100%;
+
+            .super-calendar-v3 .profile-avatar {
+                width: 56px;
+                height: 56px;
                 border-radius: 50%;
                 object-fit: cover;
+                position: relative;
             }
-            
-            .online-indicator {
+
+            .super-calendar-v3 .online-indicator {
                 position: absolute;
                 bottom: 2px;
                 right: 2px;
-                width: 12px;
-                height: 12px;
+                width: 16px;
+                height: 16px;
                 background: #10b981;
-                border: 2px solid white;
+                border: 3px solid white;
                 border-radius: 50%;
             }
-            
-            .profile-info h3 {
-                margin: 0;
-                font-size: 16px;
+
+            .super-calendar-v3 .profile-details h3 {
+                font-size: 18px;
                 font-weight: 600;
-                color: ${this.config.textColor};
+                margin: 0 0 4px 0;
+                color: #111827;
+                line-height: 1.2;
             }
-            
-            .profile-info p {
-                margin: 2px 0 0 0;
-                font-size: 14px;
+
+            .super-calendar-v3 .profile-details p {
+                font-size: 15px;
                 color: #6b7280;
-            }
-            
-            .close-button {
-                background: none;
-                border: none;
-                font-size: 20px;
-                color: #9ca3af;
-                cursor: pointer;
-                padding: 4px;
-                line-height: 1;
-            }
-            
-            .close-button:hover {
-                color: #6b7280;
-            }
-            
-            .widget-content {
-                padding: 24px 20px;
-            }
-            
-            .main-heading {
-                font-size: 20px;
-                font-weight: 700;
-                color: ${this.config.textColor};
+                margin: 0;
                 line-height: 1.3;
-                margin: 0 0 12px 0;
             }
-            
-            .main-description {
-                font-size: 14px;
+
+            .super-calendar-v3 .main-content {
+                padding: 25px 30px 30px;
+            }
+
+            .super-calendar-v3 .main-heading {
+                font-size: 22px;
+                font-weight: 700;
+                margin-bottom: 12px;
+                color: #111827;
+                line-height: 1.3;
+                letter-spacing: -0.025em;
+            }
+
+            .super-calendar-v3 .main-description {
+                font-size: 16px;
                 color: #6b7280;
+                margin-bottom: 25px;
                 line-height: 1.5;
-                margin: 0 0 24px 0;
             }
-            
-            .timer-section {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 16px;
-                margin-bottom: 24px;
+
+            .super-calendar-v3 .timer-section {
+                background: linear-gradient(135deg, ${this.config.primaryColor} 0%, ${this.config.progressBarColor} 100%);
+                color: white;
+                padding: 18px 24px;
+                border-radius: 12px;
+                margin-bottom: 25px;
                 position: relative;
                 overflow: hidden;
             }
-            
-            .timer-progress-bar {
-                position: absolute;
-                top: 0;
-                left: 0;
-                height: 4px;
-                background: ${this.config.progressBarColor};
-                width: 100%;
-                transition: width 1s linear;
-            }
-            
-            .timer-content {
+
+            .super-calendar-v3 .timer-content {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 position: relative;
-                z-index: 1;
+                z-index: 2;
             }
-            
-            .timer-text {
+
+            .super-calendar-v3 .timer-text {
                 font-size: 16px;
                 font-weight: 600;
-                color: ${this.config.textColor};
+                opacity: 0.95;
             }
-            
-            .timer-display {
-                font-size: 18px;
+
+            .super-calendar-v3 .timer-display {
+                font-size: 20px;
                 font-weight: 700;
-                color: ${this.config.textColor};
-                font-family: 'Courier New', monospace;
+                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
             }
-            
-            .date-selection {
-                display: flex;
-                gap: 8px;
-                margin-bottom: 24px;
-                justify-content: space-between;
+
+            .super-calendar-v3 .progress-bar {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.2);
+                overflow: hidden;
             }
-            
-            .date-button {
-                flex: 1;
+
+            .super-calendar-v3 .progress-fill {
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                transition: width 1s linear;
+                border-radius: 0 2px 2px 0;
+            }
+
+            .super-calendar-v3 .dates-section {
+                margin-bottom: 25px;
+            }
+
+            .super-calendar-v3 .dates-grid {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 10px;
+            }
+
+            .super-calendar-v3 .date-button {
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 12px 8px;
+                border-radius: 12px;
+                padding: 16px 8px;
                 text-align: center;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                min-height: 60px;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                color: ${this.config.textColor};
+                position: relative;
             }
-            
-            .date-button:hover {
-                border-color: #d1d5db;
-                background: #f9fafb;
-            }
-            
-            .date-button.selected {
-                background: ${this.config.primaryColor};
+
+            .super-calendar-v3 .date-button:hover {
                 border-color: ${this.config.primaryColor};
+                background: #f8faff;
+                transform: translateY(-1px);
+            }
+
+            .super-calendar-v3 .date-button.selected {
+                border-color: ${this.config.primaryColor};
+                background: ${this.config.primaryColor};
                 color: white;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
             }
-            
-            .date-day {
-                font-size: 12px;
+
+            .super-calendar-v3 .date-button .day {
+                font-size: 13px;
                 font-weight: 600;
-                margin-bottom: 2px;
                 text-transform: uppercase;
+                margin-bottom: 6px;
+                opacity: 0.8;
+                letter-spacing: 0.5px;
             }
-            
-            .date-number {
-                font-size: 16px;
+
+            .super-calendar-v3 .date-button .date {
+                font-size: 18px;
                 font-weight: 700;
+                line-height: 1;
             }
-            
-            .action-buttons {
+
+            .super-calendar-v3 .buttons-section {
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
-                margin-bottom: 20px;
+                margin-bottom: 25px;
             }
-            
-            .btn-primary {
-                background: ${this.config.primaryColor};
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 14px 20px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: background 0.2s ease;
-                width: 100%;
-            }
-            
-            .btn-primary:hover {
-                opacity: 0.9;
-            }
-            
-            .btn-secondary {
-                background: white;
-                color: ${this.config.textColor};
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 14px 20px;
+
+            .super-calendar-v3 .action-button {
+                padding: 16px 24px;
+                border-radius: 12px;
                 font-size: 16px;
                 font-weight: 600;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                width: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-            }
-            
-            .btn-secondary:hover {
-                border-color: #d1d5db;
-                background: #f9fafb;
-            }
-            
-            .widget-footer {
-                padding: 16px 20px;
+                border: none;
+                text-decoration: none;
                 text-align: center;
-                border-top: 1px solid #e5e7eb;
-                background: #f9fafb;
+                display: block;
+                position: relative;
+                overflow: hidden;
             }
-            
-            .powered-by {
-                font-size: 12px;
+
+            .super-calendar-v3 .action-button.primary {
+                background: ${this.config.primaryColor};
+                color: white;
+                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
+            }
+
+            .super-calendar-v3 .action-button.primary:hover {
+                background: #1e40af;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 16px rgba(30, 58, 138, 0.4);
+            }
+
+            .super-calendar-v3 .action-button.secondary {
+                background: white;
+                color: ${this.config.primaryColor};
+                border: 2px solid ${this.config.primaryColor};
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            .super-calendar-v3 .action-button.secondary:hover {
+                background: #f8faff;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.15);
+            }
+
+            .super-calendar-v3 .action-button:active {
+                transform: translateY(0);
+            }
+
+            .super-calendar-v3 .footer {
+                padding: 20px 30px;
+                border-top: 1px solid #f3f4f6;
+                text-align: center;
+                background: #fafafa;
+            }
+
+            .super-calendar-v3 .powered-by {
+                font-size: 13px;
                 color: #9ca3af;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 gap: 6px;
             }
-            
-            .powered-by-logo {
+
+            .super-calendar-v3 .powered-by svg {
+                width: 16px;
                 height: 16px;
-                opacity: 0.7;
+                opacity: 0.6;
             }
-            
+
+            /* Mobile responsiveness */
             @media (max-width: 480px) {
-                .super-calendar {
+                .super-calendar-v3 {
                     max-width: 100%;
                     margin: 0;
                     border-radius: 0;
                 }
                 
-                .date-selection {
-                    gap: 4px;
+                .super-calendar-v3 .profile-section,
+                .super-calendar-v3 .main-content,
+                .super-calendar-v3 .footer {
+                    padding-left: 20px;
+                    padding-right: 20px;
                 }
                 
-                .date-button {
-                    padding: 10px 4px;
-                    min-height: 55px;
+                .super-calendar-v3 .main-heading {
+                    font-size: 20px;
                 }
                 
-                .date-day {
-                    font-size: 11px;
+                .super-calendar-v3 .dates-grid {
+                    gap: 8px;
                 }
                 
-                .date-number {
-                    font-size: 14px;
+                .super-calendar-v3 .date-button {
+                    padding: 12px 6px;
                 }
             }
-            
-            .fade-in {
-                animation: fadeIn 0.3s ease-in;
+
+            /* Animation for initial load */
+            .super-calendar-v3 {
+                animation: superCalendarFadeIn 0.5s ease-out;
             }
-            
-            @keyframes fadeIn {
+
+            @keyframes superCalendarFadeIn {
                 from {
                     opacity: 0;
-                    transform: translateY(10px);
+                    transform: translateY(20px);
                 }
                 to {
                     opacity: 1;
@@ -387,100 +395,102 @@ class SuperCalendar {
                 }
             }
         `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.id = 'super-calendar-styles-v3';
+        styleSheet.textContent = styles;
+        document.head.appendChild(styleSheet);
     }
     
     render() {
+        const container = typeof this.config.container === 'string' 
+            ? document.querySelector(this.config.container)
+            : this.config.container;
+            
+        if (!container) {
+            console.error('Super Calendar: Container not found');
+            return;
+        }
+        
+        // Generate dates
         const dates = this.generateDates();
         
-        this.container.innerHTML = `
-            <div class="super-calendar fade-in">
-                ${this.renderHeader()}
-                <div class="widget-content">
-                    ${this.renderMainContent()}
-                    ${this.renderTimerSection()}
-                    ${this.renderDateSelection(dates)}
-                    ${this.renderActionButtons()}
-                </div>
-                ${this.config.showFooter ? this.renderFooter() : ''}
-            </div>
-        `;
-    }
-    
-    renderHeader() {
-        return `
-            <div class="widget-header">
-                <div class="profile-section">
-                    <div class="profile-avatar">
-                        <img src="${this.config.profileAvatar}" alt="${this.config.profileName}" class="avatar-image">
-                        ${this.config.showOnlineIndicator ? '<div class="online-indicator"></div>' : ''}
-                    </div>
-                    <div class="profile-info">
-                        <h3>${this.config.profileName}</h3>
-                        <p>${this.config.profileTitle}</p>
-                    </div>
-                </div>
-                ${this.config.showCloseButton ? '<button class="close-button" data-action="close">&times;</button>' : ''}
-            </div>
-        `;
-    }
-    
-    renderMainContent() {
-        return `
-            <h2 class="main-heading">${this.config.mainHeading}</h2>
-            <p class="main-description">${this.config.mainDescription}</p>
-        `;
-    }
-    
-    renderTimerSection() {
-        return `
-            <div class="timer-section">
-                <div class="timer-progress-bar" id="timer-progress"></div>
-                <div class="timer-content">
-                    <span class="timer-text">${this.config.timerText}</span>
-                    <span class="timer-display" id="timer-display">${this.formatTime(this.currentTime)}</span>
-                </div>
-            </div>
-        `;
-    }
-    
-    renderDateSelection(dates) {
-        const dateButtons = dates.map((date, index) => `
-            <button class="date-button" data-date="${date.value}" data-index="${index}">
-                <div class="date-day">${date.day}</div>
-                <div class="date-number">${date.date}</div>
-            </button>
-        `).join('');
+        // Generate buttons
+        const buttonsHtml = this.config.buttons.map(button => 
+            `<button class="action-button ${button.style}" 
+                     data-action="${button.action}" 
+                     data-url="${button.url}"
+                     data-text="${button.text}">
+                ${button.text}
+            </button>`
+        ).join('');
         
-        return `
-            <div class="date-selection">
-                ${dateButtons}
-            </div>
-        `;
-    }
-    
-    renderActionButtons() {
-        return `
-            <div class="action-buttons">
-                <button class="btn-primary" data-action="primary">${this.config.primaryButtonText}</button>
-                ${this.config.showSecondaryButton ? `
-                    <button class="btn-secondary" data-action="secondary">
-                        <span>${this.config.secondaryButtonText}</span>
-                        <span>→</span>
-                    </button>
+        // Generate dates HTML
+        const datesHtml = dates.map((date, index) => 
+            `<div class="date-button ${index === 0 ? 'selected' : ''}" 
+                  data-date="${date.fullDate}"
+                  data-index="${index}">
+                <div class="day">${date.day}</div>
+                <div class="date">${date.date}</div>
+            </div>`
+        ).join('');
+        
+        container.innerHTML = `
+            <div class="super-calendar-v3" data-source="${this.config.source}">
+                ${this.config.showCloseButton ? '<button class="close-button">×</button>' : ''}
+                
+                <div class="profile-section">
+                    <div class="profile-info">
+                        <div style="position: relative;">
+                            <img src="${this.config.profileAvatar}" alt="Profile" class="profile-avatar">
+                            ${this.config.showOnlineIndicator ? '<div class="online-indicator"></div>' : ''}
+                        </div>
+                        <div class="profile-details">
+                            <h3>${this.config.profileName}</h3>
+                            <p>${this.config.profileTitle}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="main-content">
+                    <h2 class="main-heading">${this.config.mainHeading}</h2>
+                    <p class="main-description">${this.config.mainDescription}</p>
+                    
+                    <div class="timer-section">
+                        <div class="timer-content">
+                            <span class="timer-text">${this.config.timerText}</span>
+                            <span class="timer-display" id="timer-display-${this.config.source}">03:00</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill-${this.config.source}"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="dates-section">
+                        <div class="dates-grid">
+                            ${datesHtml}
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-section">
+                        ${buttonsHtml}
+                    </div>
+                </div>
+                
+                ${this.config.showFooter ? `
+                <div class="footer">
+                    <div class="powered-by">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+                        </svg>
+                        ${this.config.poweredByText}
+                    </div>
+                </div>
                 ` : ''}
             </div>
         `;
-    }
-    
-    renderFooter() {
-        return `
-            <div class="widget-footer">
-                <div class="powered-by">
-                    <span>${this.config.poweredByText}</span>
-                    ${this.config.poweredByLogo ? `<img src="${this.config.poweredByLogo}" alt="Logo" class="powered-by-logo">` : ''}
-                </div>
-            </div>
-        `;
+        
+        this.selectedDate = dates[0]; // Select first date by default
     }
     
     generateDates() {
@@ -491,15 +501,11 @@ class SuperCalendar {
             const date = new Date(today);
             date.setDate(today.getDate() + i);
             
-            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const day = dayNames[date.getDay()];
-            const dateNum = date.getDate().toString().padStart(2, '0');
-            
             dates.push({
-                day: day,
-                date: dateNum,
-                value: date.toISOString().split('T')[0],
-                fullDate: date
+                day: date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(),
+                date: date.getDate().toString().padStart(2, '0'),
+                fullDate: date.toISOString().split('T')[0],
+                dateObj: date
             });
         }
         
@@ -507,180 +513,145 @@ class SuperCalendar {
     }
     
     bindEvents() {
-        this.container.addEventListener('click', (e) => {
+        const container = document.querySelector(this.config.container);
+        if (!container) return;
+        
+        // Date selection
+        container.addEventListener('click', (e) => {
             if (e.target.closest('.date-button')) {
-                this.handleDateSelect(e.target.closest('.date-button'));
+                const dateButton = e.target.closest('.date-button');
+                const dateIndex = parseInt(dateButton.dataset.index);
+                const dateValue = dateButton.dataset.date;
+                
+                // Update selection
+                container.querySelectorAll('.date-button').forEach(btn => btn.classList.remove('selected'));
+                dateButton.classList.add('selected');
+                
+                this.selectedDate = {
+                    index: dateIndex,
+                    date: dateValue,
+                    element: dateButton
+                };
+                
+                if (this.config.onDateSelect) {
+                    this.config.onDateSelect(this.selectedDate);
+                }
             }
-            
-            if (e.target.dataset.action === 'close') {
-                this.handleClose();
+        });
+        
+        // Button clicks
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.action-button')) {
+                const button = e.target.closest('.action-button');
+                const action = button.dataset.action;
+                const url = button.dataset.url;
+                const text = button.dataset.text;
+                
+                this.handleButtonClick(action, url, text, button);
             }
-            
-            if (e.target.dataset.action === 'primary') {
-                this.handlePrimaryClick();
-            }
-            
-            if (e.target.dataset.action === 'secondary') {
-                this.handleSecondaryClick();
+        });
+        
+        // Close button
+        container.addEventListener('click', (e) => {
+            if (e.target.closest('.close-button')) {
+                this.close();
             }
         });
     }
     
-    handleDateSelect(button) {
-        this.container.querySelectorAll('.date-button').forEach(btn => {
-            btn.classList.remove('selected');
-        });
+    handleButtonClick(action, url, text, buttonElement) {
+        console.log(`Super Calendar: Button clicked - ${action} - ${url}`);
         
-        button.classList.add('selected');
-        this.selectedDate = button.dataset.date;
-        
-        if (this.config.onDateSelect) {
-            this.config.onDateSelect(this.selectedDate);
-        }
-        
-        this.triggerPatternInterrupt();
-    }
-    
-    triggerPatternInterrupt() {
-        if (!this.selectedDate) return;
-        
-        console.log('Pattern interrupt triggered for date:', this.selectedDate);
-        
-        if (this.config.popupUrl) {
-            this.openPopup();
-        } else if (this.config.redirectUrl) {
-            this.redirect();
-        } else {
-            // Default behavior - show alert
-            alert(`Date selected: ${this.selectedDate}. Configure popupUrl or redirectUrl for custom behavior.`);
-        }
-    }
-    
-    openPopup() {
-        const url = this.buildUrl(this.config.popupUrl);
-        
-        if (this.config.openInNewTab) {
-            window.open(url, '_blank');
-        } else {
-            // Open in popup window
-            const popup = window.open(
+        if (this.config.onButtonClick) {
+            const result = this.config.onButtonClick({
+                action,
                 url,
-                'scheduling-popup',
-                'width=800,height=600,scrollbars=yes,resizable=yes,centerscreen=yes'
-            );
+                text,
+                selectedDate: this.selectedDate,
+                element: buttonElement
+            });
             
-            if (popup) {
-                popup.focus();
-            }
-        }
-    }
-    
-    redirect() {
-        const url = this.buildUrl(this.config.redirectUrl);
-        window.location.href = url;
-    }
-    
-    buildUrl(baseUrl) {
-        if (!baseUrl) return '';
-        
-        const url = new URL(baseUrl);
-        
-        // Add selected date as parameter
-        if (this.selectedDate) {
-            url.searchParams.set('date', this.selectedDate);
+            if (result === false) return; // Allow callback to prevent default action
         }
         
-        // Add any additional tracking parameters
-        url.searchParams.set('source', 'super-calendar');
-        url.searchParams.set('timestamp', Date.now());
-        
-        return url.toString();
+        switch (action) {
+            case 'popup':
+                if (url) {
+                    const popup = window.open(url, 'super-calendar-popup', 
+                        'width=600,height=700,scrollbars=yes,resizable=yes');
+                    if (popup) popup.focus();
+                }
+                break;
+                
+            case 'redirect':
+                if (url) {
+                    window.location.href = url;
+                }
+                break;
+                
+            case 'new-tab':
+                if (url) {
+                    window.open(url, '_blank');
+                }
+                break;
+                
+            case 'highlevel':
+                if (url) {
+                    // HighLevel calendar integration
+                    const popup = window.open(url, 'highlevel-calendar', 
+                        'width=800,height=800,scrollbars=yes,resizable=yes');
+                    if (popup) popup.focus();
+                }
+                break;
+                
+            default:
+                console.warn(`Super Calendar: Unknown action type: ${action}`);
+        }
     }
     
     startTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        
+        this.currentTime = this.config.timerDuration;
+        const timerDisplay = document.getElementById(`timer-display-${this.config.source}`);
+        const progressFill = document.getElementById(`progress-fill-${this.config.source}`);
+        
+        if (!timerDisplay || !progressFill) return;
+        
         this.timerInterval = setInterval(() => {
             this.currentTime--;
             
-            if (this.currentTime <= 0) {
-                this.currentTime = 0;
-                this.handleTimerEnd();
-            }
+            const minutes = Math.floor(this.currentTime / 60);
+            const seconds = this.currentTime % 60;
             
-            this.updateTimerDisplay();
-            this.updateProgressBar();
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const percentage = (this.currentTime / this.config.timerDuration) * 100;
+            progressFill.style.width = `${Math.max(0, percentage)}%`;
+            
+            if (this.currentTime <= 0) {
+                if (this.config.autoResetTimer) {
+                    this.currentTime = this.config.timerDuration;
+                } else {
+                    clearInterval(this.timerInterval);
+                }
+            }
         }, 1000);
     }
     
-    updateTimerDisplay() {
-        const display = this.container.querySelector('#timer-display');
-        if (display) {
-            display.textContent = this.formatTime(this.currentTime);
-        }
-    }
-    
-    updateProgressBar() {
-        const progressBar = this.container.querySelector('#timer-progress');
-        if (progressBar) {
-            const percentage = (this.currentTime / this.config.timerDuration) * 100;
-            progressBar.style.width = `${percentage}%`;
-        }
-    }
-    
-    formatTime(seconds) {
-        const minutes = Math.floor(seconds / 60);
-        const remainingSeconds = seconds % 60;
-        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-    
-    handleTimerEnd() {
-        clearInterval(this.timerInterval);
-        
-        if (this.config.onTimerEnd) {
-            this.config.onTimerEnd();
+    close() {
+        const container = document.querySelector(this.config.container);
+        if (container) {
+            container.style.display = 'none';
         }
         
-        if (this.config.autoReset) {
-            setTimeout(() => {
-                this.resetTimer();
-            }, 2000);
-        }
-    }
-    
-    resetTimer() {
-        this.currentTime = this.config.timerDuration;
-        this.startTimer();
-    }
-    
-    handlePrimaryClick() {
-        if (this.config.onPrimaryClick) {
-            this.config.onPrimaryClick();
-        } else {
-            this.triggerPatternInterrupt();
-        }
-    }
-    
-    handleSecondaryClick() {
-        if (this.config.onSecondaryClick) {
-            this.config.onSecondaryClick();
-        } else if (this.config.redirectUrl) {
-            this.redirect();
-        }
-    }
-    
-    handleClose() {
         if (this.config.onClose) {
             this.config.onClose();
-        } else {
-            this.destroy();
         }
-    }
-    
-    updateConfig(newConfig) {
-        this.config = { ...this.config, ...newConfig };
-        if (this.isInitialized) {
-            this.render();
-            this.bindEvents();
-        }
+        
+        console.log('Super Calendar: Widget closed');
     }
     
     destroy() {
@@ -688,36 +659,54 @@ class SuperCalendar {
             clearInterval(this.timerInterval);
         }
         
-        if (this.container) {
-            this.container.innerHTML = '';
+        const container = document.querySelector(this.config.container);
+        if (container) {
+            container.innerHTML = '';
         }
         
-        this.isInitialized = false;
+        const styles = document.getElementById('super-calendar-styles-v3');
+        if (styles) {
+            styles.remove();
+        }
+        
+        console.log('Super Calendar: Widget destroyed');
+    }
+    
+    updateConfig(newConfig) {
+        this.config = { ...this.config, ...newConfig };
+        this.render();
+        this.bindEvents();
+        this.startTimer();
     }
 }
 
-// Make widget available globally
-window.SuperCalendar = SuperCalendar;
-
-// Auto-initialize if data attributes are found
-document.addEventListener('DOMContentLoaded', function() {
-    const autoInit = document.querySelector('[data-super-calendar]');
-    if (autoInit) {
-        const config = {};
-        
-        // Parse data attributes
-        Array.from(autoInit.attributes).forEach(attr => {
-            if (attr.name.startsWith('data-')) {
-                const key = attr.name.replace('data-', '').replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                config[key] = attr.value;
-            }
-        });
-        
-        const widget = new SuperCalendar({
-            container: autoInit,
-            ...config
-        });
-        widget.init();
-    }
+// Auto-initialization for data attributes
+document.addEventListener('DOMContentLoaded', () => {
+    const autoInitElements = document.querySelectorAll('[data-super-calendar-v3]');
+    
+    autoInitElements.forEach(element => {
+        try {
+            const config = JSON.parse(element.dataset.superCalendarV3 || '{}');
+            config.container = element;
+            
+            const widget = new SuperCalendar(config);
+            widget.init();
+            
+            // Store instance for later access
+            element.superCalendarInstance = widget;
+        } catch (error) {
+            console.error('Super Calendar: Auto-initialization failed', error);
+        }
+    });
 });
+
+// Global access
+if (typeof window !== 'undefined') {
+    window.SuperCalendar = SuperCalendar;
+}
+
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = SuperCalendar;
+}
 

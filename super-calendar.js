@@ -1,5 +1,5 @@
 /**
- * Super Calendar Floating Widget v4.0
+ * Super Calendar Floating Widget v5.0
  * A customizable floating scheduling widget with timer, date selection, and configurable buttons
  * 
  * Features:
@@ -11,6 +11,8 @@
  * - Theme color customization
  * - Font Awesome icons
  * - No overlay - natural floating behavior
+ * - Modal popup for calendar embeds
+ * - HighLevel calendar integration
  */
 
 class SuperCalendar {
@@ -41,13 +43,15 @@ class SuperCalendar {
                     text: 'Schedule a Demo',
                     style: 'primary',
                     action: 'popup',
-                    url: 'https://your-calendar-url.com'
+                    url: 'https://your-calendar-url.com',
+                    calendarUrl: 'https://lclink.co/widget/bookings/uwhgwhhdc4unhhxhgczh'
                 },
                 {
                     text: 'Start Free Trial',
                     style: 'secondary',
                     action: 'redirect',
-                    url: 'https://your-website.com/trial'
+                    url: 'https://your-website.com/trial',
+                    calendarUrl: ''
                 }
             ],
             
@@ -354,11 +358,313 @@ class SuperCalendar {
                 transform: translateY(-1px);
             }
             
+            /* Modal Styles - HighLevel Inspired Design */
+            .super-calendar-modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.6);
+                z-index: 10000;
+                justify-content: center;
+                align-items: center;
+                animation: fadeIn 0.3s ease;
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            
+            .super-calendar-modal.show {
+                display: flex;
+            }
+            
+            .super-calendar-modal-content {
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+                width: 95%;
+                max-width: 1400px;
+                height: 95%;
+                max-height: 900px;
+                min-height: 800px;
+                position: relative;
+                overflow: hidden;
+                animation: slideIn 0.3s ease;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            /* Progress indicator at top */
+            .super-calendar-modal-content::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 60px;
+                background: #ffffff;
+                border-bottom: 1px solid #e5e7eb;
+                z-index: 100;
+            }
+            
+            .super-calendar-modal-content::after {
+                content: '● Fill out the form    ○ Book your event';
+                position: absolute;
+                top: 20px;
+                left: 24px;
+                font-size: 14px;
+                font-weight: 500;
+                color: ${this.options.primaryColor};
+                z-index: 101;
+                font-family: 'Inter', sans-serif;
+            }
+            
+            .super-calendar-modal-header {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                padding: 0.75rem 1.5rem;
+                background: transparent;
+                border: none;
+                position: absolute;
+                top: 0;
+                right: 0;
+                z-index: 102;
+            }
+            
+            .super-calendar-modal-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: #6b7280;
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .super-calendar-modal-close:hover {
+                background-color: #f3f4f6;
+                color: #374151;
+            }
+            
+            .super-calendar-modal-body {
+                height: 100%;
+                overflow: hidden;
+                margin-top: 60px;
+                position: relative;
+            }
+            
+            .super-calendar-modal-inner {
+                display: flex;
+                height: 100%;
+                min-height: 700px;
+                padding: 16px;
+            }
+            
+            /* Left column: HighLevel form */
+            .super-calendar-form-column {
+                flex: 1;
+                background: #ffffff;
+                border-radius: 12px;
+                overflow: hidden;
+                margin-right: 16px;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            .super-calendar-form-column iframe {
+                width: 100%;
+                height: 100%;
+                border: none;
+            }
+            
+            /* Right column: Calendar placeholder */
+            .super-calendar-placeholder-column {
+                flex: 1;
+                background: #f9fafb;
+                border-radius: 12px;
+                padding: 24px;
+                position: relative;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            }
+            
+            .calendar-placeholder {
+                position: relative;
+            }
+            
+            .calendar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            
+            .calendar-month {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1f2937;
+            }
+            
+            .calendar-nav {
+                display: flex;
+                gap: 6px;
+            }
+            
+            .calendar-nav button {
+                width: 28px;
+                height: 28px;
+                border: 1px solid #d1d5db;
+                background: white;
+                border-radius: 6px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #6b7280;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            }
+            
+            .calendar-nav button:hover {
+                background: ${this.options.primaryColor};
+                color: white;
+                border-color: ${this.options.primaryColor};
+            }
+            
+            .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 1px;
+                background: #e5e7eb;
+                border-radius: 8px;
+                overflow: hidden;
+                opacity: 0.4;
+            }
+            
+            .calendar-day-header {
+                background: #f9fafb;
+                padding: 8px 6px;
+                text-align: center;
+                font-weight: 500;
+                font-size: 11px;
+                color: #6b7280;
+                text-transform: uppercase;
+            }
+            
+            .calendar-day {
+                background: white;
+                padding: 8px 6px;
+                text-align: center;
+                font-size: 13px;
+                color: #9ca3af;
+                min-height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .calendar-day.available {
+                background: ${this.options.primaryColor}20;
+                color: ${this.options.primaryColor};
+                font-weight: 500;
+            }
+            
+            .calendar-overlay {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                border: 2px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 24px;
+                text-align: center;
+                color: #6b7280;
+                font-size: 15px;
+                line-height: 1.4;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                max-width: 260px;
+                z-index: 10;
+            }
+            
+            /* Form submitted state - hide calendar placeholder */
+            .super-calendar-modal.form-submitted .super-calendar-placeholder-column {
+                display: none;
+            }
+            
+            .super-calendar-modal.form-submitted .super-calendar-form-column {
+                margin-right: 0;
+            }
+            
+            .super-calendar-modal.form-submitted .super-calendar-modal-content::after {
+                content: '○ Fill out the form    ● Book your event';
+            }
+            
+            /* Mobile responsiveness */
+            @media (max-width: 768px) {
+                .super-calendar-modal-content {
+                    width: 98%;
+                    height: 95%;
+                    border-radius: 12px;
+                }
+                
+                .super-calendar-modal-inner {
+                    flex-direction: column;
+                    padding: 12px;
+                }
+                
+                .super-calendar-form-column {
+                    margin-right: 0;
+                    margin-bottom: 12px;
+                    flex: 2;
+                }
+                
+                .super-calendar-placeholder-column {
+                    flex: 1;
+                    padding: 16px;
+                }
+                
+                .super-calendar-modal-content::after {
+                    font-size: 12px;
+                    left: 16px;
+                    top: 22px;
+                }
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.95) translateY(-10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1) translateY(0);
+                }
+            }
+            
             @media (max-width: 480px) {
                 .super-calendar-widget {
                     width: calc(100vw - 20px);
                     right: 10px;
                     left: 10px;
+                }
+                
+                .super-calendar-modal-content {
+                    width: 95%;
+                    height: 90%;
+                    max-height: none;
                 }
             }
         `;
@@ -430,7 +736,8 @@ class SuperCalendar {
                     ${this.options.buttons.map(button => `
                         <button class="super-calendar-button ${button.style}" 
                                 data-action="${button.action}" 
-                                data-url="${button.url || ''}">
+                                data-url="${button.url || ''}"
+                                data-calendar-url="${button.calendarUrl || ''}">
                             ${button.text}
                         </button>
                     `).join('')}
@@ -441,8 +748,86 @@ class SuperCalendar {
         document.body.appendChild(button);
         document.body.appendChild(widget);
         
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = this.widgetId + '-modal';
+        modal.className = 'super-calendar-modal';
+        modal.innerHTML = `
+            <div class="super-calendar-modal-content">
+                <div class="super-calendar-modal-header">
+                    <button class="super-calendar-modal-close">&times;</button>
+                </div>
+                <div class="super-calendar-modal-body">
+                    <div class="super-calendar-modal-inner">
+                        <div class="super-calendar-form-column">
+                            <iframe src="" frameborder="0"></iframe>
+                        </div>
+                        <div class="super-calendar-placeholder-column">
+                            <div class="calendar-placeholder">
+                                <div class="calendar-header">
+                                    <div class="calendar-month">September 2025</div>
+                                    <div class="calendar-nav">
+                                        <button type="button">‹</button>
+                                        <button type="button">›</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="calendar-grid">
+                                    <div class="calendar-day-header">SUN</div>
+                                    <div class="calendar-day-header">MON</div>
+                                    <div class="calendar-day-header">TUE</div>
+                                    <div class="calendar-day-header">WED</div>
+                                    <div class="calendar-day-header">THU</div>
+                                    <div class="calendar-day-header">FRI</div>
+                                    <div class="calendar-day-header">SAT</div>
+                                    
+                                    <div class="calendar-day">1</div>
+                                    <div class="calendar-day">2</div>
+                                    <div class="calendar-day">3</div>
+                                    <div class="calendar-day available">4</div>
+                                    <div class="calendar-day available">5</div>
+                                    <div class="calendar-day available">6</div>
+                                    <div class="calendar-day available">7</div>
+                                    <div class="calendar-day available">8</div>
+                                    <div class="calendar-day available">9</div>
+                                    <div class="calendar-day available">10</div>
+                                    <div class="calendar-day available">11</div>
+                                    <div class="calendar-day">12</div>
+                                    <div class="calendar-day">13</div>
+                                    <div class="calendar-day">14</div>
+                                    <div class="calendar-day">15</div>
+                                    <div class="calendar-day">16</div>
+                                    <div class="calendar-day">17</div>
+                                    <div class="calendar-day">18</div>
+                                    <div class="calendar-day">19</div>
+                                    <div class="calendar-day">20</div>
+                                    <div class="calendar-day">21</div>
+                                    <div class="calendar-day">22</div>
+                                    <div class="calendar-day">23</div>
+                                    <div class="calendar-day">24</div>
+                                    <div class="calendar-day">25</div>
+                                    <div class="calendar-day">26</div>
+                                    <div class="calendar-day">27</div>
+                                    <div class="calendar-day">28</div>
+                                    <div class="calendar-day">29</div>
+                                    <div class="calendar-day">30</div>
+                                </div>
+                                
+                                <div class="calendar-overlay">
+                                    Please fill out the form before choosing your time slot.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
         this.button = button;
         this.widget = widget;
+        this.modal = modal;
     }
     
     bindEvents() {
@@ -451,6 +836,14 @@ class SuperCalendar {
         
         // Close button click
         this.widget.querySelector('.super-calendar-close').addEventListener('click', () => this.close());
+        
+        // Modal close events
+        this.modal.querySelector('.super-calendar-modal-close').addEventListener('click', () => this.closeModal());
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.closeModal();
+            }
+        });
         
         // Date button clicks
         this.widget.querySelectorAll('.super-calendar-date').forEach(dateBtn => {
@@ -469,7 +862,8 @@ class SuperCalendar {
             actionBtn.addEventListener('click', (e) => {
                 const action = e.target.dataset.action;
                 const url = e.target.dataset.url;
-                this.handleButtonClick(action, url);
+                const calendarUrl = e.target.dataset.calendarUrl;
+                this.handleButtonClick(action, url, calendarUrl);
             });
         });
         
@@ -582,12 +976,17 @@ class SuperCalendar {
         this.openHighLevelCalendar();
     }
     
-    handleButtonClick(action, url) {
-        console.log('Button clicked:', action, url);
+    handleButtonClick(action, url, calendarUrl) {
+        console.log('Button clicked:', action, url, calendarUrl);
         
         switch (action) {
             case 'popup':
-                this.openHighLevelCalendar();
+                if (calendarUrl) {
+                    this.openModal(calendarUrl);
+                } else {
+                    console.warn('No calendar URL provided for popup action');
+                    alert('Calendar URL not configured. Please contact support.');
+                }
                 break;
             case 'redirect':
                 if (url) {
@@ -604,29 +1003,453 @@ class SuperCalendar {
         }
     }
     
-    openHighLevelCalendar() {
-        // Method 1: Direct embed URL
-        if (this.options.highlevelEmbedUrl) {
-            window.open(this.options.highlevelEmbedUrl, 'highlevel-calendar', 'width=800,height=600,scrollbars=yes,resizable=yes');
-            return;
+    openModal(calendarUrl) {
+        const iframe = this.modal.querySelector('iframe');
+        iframe.src = calendarUrl;
+        this.modal.classList.add('show');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+        
+        // Add form submission detection
+        this.setupFormSubmissionDetection(iframe);
+    }
+    
+    setupFormSubmissionDetection(iframe) {
+        // Inject CSS to reduce form spacing and prevent scrolling
+        iframe.onload = () => {
+            setTimeout(() => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    if (iframeDoc) {
+                        const style = iframeDoc.createElement('style');
+                        style.textContent = `
+                            /* Reduce form spacing and margins */
+                            .form-group, .mb-3, .mb-4 {
+                                margin-bottom: 0.75rem !important;
+                            }
+                            
+                            .form-control {
+                                margin-bottom: 0.5rem !important;
+                                padding: 0.5rem 0.75rem !important;
+                            }
+                            
+                            /* Reduce padding around form container */
+                            .appointment_widgets--revamp--inner,
+                            .appointment_widgets-sm--revamp .appointment_widgets--revamp--inner {
+                                padding: 1rem !important;
+                            }
+                            
+                            /* Reduce spacing around form sections */
+                            .form-section, .appointment-form {
+                                padding: 0.5rem 0 !important;
+                                margin: 0.5rem 0 !important;
+                            }
+                            
+                            /* Reduce title and description spacing */
+                            h1, h2, h3, h4, h5, h6 {
+                                margin-bottom: 0.5rem !important;
+                                margin-top: 0.5rem !important;
+                            }
+                            
+                            p {
+                                margin-bottom: 0.5rem !important;
+                            }
+                            
+                            /* Bring Continue button higher */
+                            .btn, button[type="submit"] {
+                                margin-top: 0.75rem !important;
+                                margin-bottom: 0.5rem !important;
+                            }
+                            
+                            /* Remove excessive padding from widget container */
+                            .appointment_widgets-sm--revamp,
+                            .appointment_widgets--revamp {
+                                padding: 0 !important;
+                            }
+                            
+                            /* Ensure no scrolling in iframe */
+                            body {
+                                overflow: hidden !important;
+                                margin: 0 !important;
+                                padding: 0 !important;
+                            }
+                        `;
+                        iframeDoc.head.appendChild(style);
+                        console.log('Form spacing CSS injected successfully');
+                    }
+                } catch (error) {
+                    console.log('Could not inject form spacing CSS (CORS restriction):', error.message);
+                }
+            }, 1000);
+        };
+        
+        // Monitor for form submission by checking URL changes or specific events
+        let checkCount = 0;
+        const maxChecks = 60; // Check for 30 seconds
+        
+        const checkFormSubmission = () => {
+            checkCount++;
+            
+            try {
+                // Try to access iframe content (will fail due to CORS, but we can still monitor)
+                const currentSrc = iframe.src;
+                
+                // Check if URL has changed (indicating form submission)
+                if (currentSrc !== iframe.getAttribute('data-original-src')) {
+                    this.handleFormSubmission();
+                    return;
+                }
+            } catch (error) {
+                // Expected due to CORS
+            }
+            
+            // Continue checking if we haven't reached max checks
+            if (checkCount < maxChecks) {
+                setTimeout(checkFormSubmission, 500);
+            }
+        };
+        
+        // Store original URL for comparison
+        iframe.setAttribute('data-original-src', iframe.src);
+        
+        // Start monitoring after iframe loads
+        setTimeout(() => {
+            checkFormSubmission();
+        }, 2000);
+        
+        // Also listen for postMessage events from the iframe
+        window.addEventListener('message', (event) => {
+            // Check if message is from HighLevel indicating form submission
+            if (event.data && typeof event.data === 'string') {
+                if (event.data.includes('continue') || event.data.includes('submit') || event.data.includes('next')) {
+                    this.handleFormSubmission();
+                }
+            }
+        });
+    }
+    
+    handleFormSubmission() {
+        console.log('Form submission detected - hiding calendar placeholder');
+        this.modal.classList.add('form-submitted');
+        
+        // Hide the calendar placeholder column
+        const placeholderColumn = this.modal.querySelector('.super-calendar-placeholder-column');
+        if (placeholderColumn) {
+            placeholderColumn.style.display = 'none';
         }
         
-        // Method 2: HighLevel Calendar API
-        if (this.options.highlevelCalendarId && this.options.highlevelLocationId) {
-            const calendarUrl = `https://api.leadconnectorhq.com/widget/booking/${this.options.highlevelCalendarId}?location_id=${this.options.highlevelLocationId}`;
-            window.open(calendarUrl, 'highlevel-calendar', 'width=800,height=600,scrollbars=yes,resizable=yes');
-            return;
+        // Expand the form column to full width
+        const formColumn = this.modal.querySelector('.super-calendar-form-column');
+        if (formColumn) {
+            formColumn.style.marginRight = '0';
         }
-        
-        // Method 3: Check for HighLevel widget on page
-        if (window.HighLevelCalendar && typeof window.HighLevelCalendar.open === 'function') {
-            window.HighLevelCalendar.open();
-            return;
+    }
+    
+    transformHighLevelWidget(iframe) {
+        try {
+            // Wait a moment for the iframe content to fully load
+            setTimeout(() => {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                if (!iframeDoc) {
+                    console.log('Cannot access iframe content due to CORS restrictions');
+                    return;
+                }
+                
+                // Inject the transformation CSS
+                const transformCSS = this.getHighLevelTransformCSS();
+                const style = iframeDoc.createElement('style');
+                style.textContent = transformCSS;
+                iframeDoc.head.appendChild(style);
+                
+                // Inject the transformation JavaScript
+                const script = iframeDoc.createElement('script');
+                script.textContent = this.getHighLevelTransformJS();
+                iframeDoc.body.appendChild(script);
+                
+                console.log('HighLevel widget transformation applied');
+            }, 1000);
+        } catch (error) {
+            console.log('Could not transform HighLevel widget (likely due to CORS):', error.message);
         }
+    }
+    
+    getHighLevelTransformCSS() {
+        const primaryColor = this.options.primaryColor;
         
-        // Fallback: Alert user to configure HighLevel integration
-        console.log('HighLevel calendar integration not configured. Please set highlevelEmbedUrl or highlevelCalendarId/highlevelLocationId options.');
-        alert('Please configure your calendar booking system.');
+        return `
+            /* HighLevel Widget - Complete Transformation Styling */
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+            
+            /* Hide specific h4 elements */
+            h4.text-info {
+                display: none !important;
+            }
+            
+            h4.text-info.custom-form-title {
+                display: none !important;
+            }
+            
+            /* Remove borders from HighLevel widget container */
+            .appointment_widgets-sm--revamp .appointment_widgets--revamp--inner {
+                border: none !important;
+            }
+            
+            /* Base font family override */
+            * {
+                font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            }
+            
+            /* Main widget container styling with reduced padding */
+            .appointment_widgets-sm--revamp,
+            .appointment_widgets--revamp,
+            [class*="appointment_widget"] {
+                background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%) !important;
+                border-radius: 16px !important;
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08) !important;
+                overflow: hidden !important;
+                max-width: 1200px !important;
+                margin: 0 auto !important;
+                position: relative !important;
+                min-height: 600px !important;
+                padding: 0 !important;
+            }
+            
+            /* Reduce padding in inner container */
+            .appointment_widgets--revamp--inner {
+                display: flex !important;
+                min-height: 600px !important;
+                padding: 16px !important;
+                border: none !important;
+                margin: 0 !important;
+            }
+            
+            /* Progress indicator at top */
+            .appointment_widgets-sm--revamp::before,
+            .appointment_widgets--revamp::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 60px;
+                background: #ffffff;
+                border-bottom: 1px solid #e5e7eb;
+                z-index: 100;
+            }
+            
+            .appointment_widgets-sm--revamp::after,
+            .appointment_widgets--revamp::after {
+                content: '● Fill out the form    ○ Book your event';
+                position: absolute;
+                top: 20px;
+                left: 24px;
+                font-size: 14px;
+                font-weight: 500;
+                color: ${primaryColor};
+                z-index: 101;
+                font-family: 'Inter', sans-serif !important;
+            }
+            
+            /* Left column: Title, description, form with reduced spacing */
+            .appointment_widgets--revamp--inner > div:first-child {
+                flex: 1 !important;
+                padding: 20px !important;
+                background: #ffffff !important;
+                display: flex !important;
+                flex-direction: column !important;
+                max-width: 50% !important;
+                margin: 0 !important;
+            }
+            
+            /* Submit button styling with primary color */
+            button[type="submit"],
+            .btn-primary,
+            .continue-button,
+            .submit-button {
+                background: ${primaryColor} !important;
+                color: #ffffff !important;
+                border: none !important;
+                border-radius: 8px !important;
+                padding: 12px 20px !important;
+                font-weight: 600 !important;
+                font-size: 14px !important;
+                cursor: pointer !important;
+                transition: all 0.2s ease !important;
+                width: 100% !important;
+                margin-top: 16px !important;
+                margin-bottom: 0 !important;
+                font-family: 'Inter', sans-serif !important;
+            }
+            
+            button[type="submit"]:hover,
+            .btn-primary:hover,
+            .continue-button:hover {
+                background: ${primaryColor}dd !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 4px 12px ${primaryColor}50 !important;
+            }
+            
+            /* Form field focus with primary color */
+            input:focus,
+            textarea:focus,
+            .form-control:focus {
+                border-color: ${primaryColor} !important;
+                box-shadow: 0 0 0 3px ${primaryColor}20 !important;
+                outline: none !important;
+            }
+            
+            /* Calendar placeholder column styling */
+            .calendar-placeholder-column {
+                flex: 1 !important;
+                background: #f9fafb !important;
+                border-left: 1px solid #e5e7eb !important;
+                padding: 24px !important;
+                position: relative !important;
+                transition: all 0.3s ease !important;
+            }
+            
+            .calendar-day.available {
+                background: ${primaryColor}20 !important;
+                color: ${primaryColor} !important;
+                font-weight: 500;
+            }
+            
+            /* Form-submitted state adjustments */
+            .form-submitted .appointment_widgets--revamp--inner > div:first-child {
+                max-width: 100% !important;
+                padding: 16px !important;
+            }
+            
+            .form-submitted .calendar-placeholder-column {
+                display: none !important;
+            }
+            
+            .form-submitted .appointment_widgets-sm--revamp::after,
+            .form-submitted .appointment_widgets--revamp::after {
+                content: '○ Fill out the form    ● Book your event' !important;
+            }
+        `;
+    }
+    
+    getHighLevelTransformJS() {
+        return `
+            (function() {
+                'use strict';
+                
+                console.log('🎯 HighLevel Widget Transformation Script Loaded');
+                
+                let formSubmitted = false;
+                let buttonClickDetected = false;
+                
+                // Create calendar placeholder column
+                function createCalendarPlaceholder() {
+                    console.log('📅 Creating calendar placeholder...');
+                    
+                    const widgetContainer = document.querySelector('.appointment_widgets--revamp--inner') ||
+                                           document.querySelector('[class*="appointment_widget"]');
+                    
+                    if (!widgetContainer || document.querySelector('.calendar-placeholder-column')) {
+                        return;
+                    }
+                    
+                    const calendarColumn = document.createElement('div');
+                    calendarColumn.className = 'calendar-placeholder-column';
+                    calendarColumn.innerHTML = \`
+                        <div class="calendar-placeholder">
+                            <div class="calendar-header">
+                                <div class="calendar-month">September 2025</div>
+                                <div class="calendar-nav">
+                                    <button type="button">‹</button>
+                                    <button type="button">›</button>
+                                </div>
+                            </div>
+                            
+                            <div class="calendar-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: #e5e7eb; border-radius: 8px; overflow: hidden; opacity: 0.4;">
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">SUN</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">MON</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">TUE</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">WED</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">THU</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">FRI</div>
+                                <div style="background: #f9fafb; padding: 8px 6px; text-align: center; font-weight: 500; font-size: 11px; color: #6b7280; text-transform: uppercase;">SAT</div>
+                                
+                                <div class="calendar-day" style="background: white; padding: 8px 6px; text-align: center; font-size: 13px; color: #9ca3af; min-height: 36px; display: flex; align-items: center; justify-content: center;">1</div>
+                                <div class="calendar-day" style="background: white; padding: 8px 6px; text-align: center; font-size: 13px; color: #9ca3af; min-height: 36px; display: flex; align-items: center; justify-content: center;">2</div>
+                                <div class="calendar-day" style="background: white; padding: 8px 6px; text-align: center; font-size: 13px; color: #9ca3af; min-height: 36px; display: flex; align-items: center; justify-content: center;">3</div>
+                                <div class="calendar-day available" style="min-height: 36px; display: flex; align-items: center; justify-content: center;">4</div>
+                                <div class="calendar-day available" style="min-height: 36px; display: flex; align-items: center; justify-content: center;">5</div>
+                                <div class="calendar-day available" style="min-height: 36px; display: flex; align-items: center; justify-content: center;">6</div>
+                                <div class="calendar-day available" style="min-height: 36px; display: flex; align-items: center; justify-content: center;">7</div>
+                            </div>
+                            
+                            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #e5e7eb; border-radius: 12px; padding: 24px; text-align: center; color: #6b7280; font-size: 15px; line-height: 1.4; font-weight: 500; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); max-width: 260px; z-index: 10;">
+                                Please fill out the form before choosing your time slot.
+                            </div>
+                        </div>
+                    \`;
+                    
+                    widgetContainer.appendChild(calendarColumn);
+                    console.log('✅ Calendar placeholder created');
+                }
+                
+                // Monitor for Continue button clicks
+                function startButtonMonitoring() {
+                    document.addEventListener('click', function(e) {
+                        if (formSubmitted) return;
+                        
+                        const clickedElement = e.target;
+                        const button = clickedElement.closest('button');
+                        
+                        if (button) {
+                            const buttonText = button.textContent.toLowerCase().trim();
+                            
+                            if (buttonText.includes('continue')) {
+                                console.log('✅ CONTINUE BUTTON CLICKED');
+                                buttonClickDetected = true;
+                                
+                                setTimeout(() => {
+                                    if (buttonClickDetected && !formSubmitted) {
+                                        handleContinueButtonClick();
+                                    }
+                                }, 1500);
+                            }
+                        }
+                    }, true);
+                }
+                
+                function handleContinueButtonClick() {
+                    if (formSubmitted) return;
+                    
+                    formSubmitted = true;
+                    console.log('🎉 CONTINUE BUTTON CLICKED - Transforming layout');
+                    
+                    document.body.classList.add('form-submitted');
+                    
+                    const calendarPlaceholder = document.querySelector('.calendar-placeholder-column');
+                    if (calendarPlaceholder) {
+                        calendarPlaceholder.style.display = 'none';
+                    }
+                }
+                
+                // Initialize
+                setTimeout(() => {
+                    createCalendarPlaceholder();
+                    startButtonMonitoring();
+                }, 1000);
+                
+            })();
+        `;
+    }
+    
+    closeModal() {
+        this.modal.classList.remove('show');
+        const iframe = this.modal.querySelector('iframe');
+        iframe.src = ''; // Clear iframe to stop any ongoing processes
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
     }
     
     destroy() {
@@ -641,6 +1464,13 @@ class SuperCalendar {
         if (this.widget) {
             this.widget.remove();
         }
+        
+        if (this.modal) {
+            this.modal.remove();
+        }
+        
+        // Restore body scroll in case modal was open
+        document.body.style.overflow = '';
         
         const styles = document.getElementById('super-calendar-styles');
         if (styles) {

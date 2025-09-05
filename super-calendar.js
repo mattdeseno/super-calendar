@@ -1,5 +1,5 @@
 /**
- * Super Calendar Widget - Simplified Version v5.1
+ * Super Calendar Widget - Simplified Version v5.2
  * A floating calendar widget with simple iframe modal
  */
 class SuperCalendar {

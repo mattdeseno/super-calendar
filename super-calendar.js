@@ -1,511 +1,497 @@
 /**
  * Super Calendar Floating Widget v4.0
- * A floating scheduling widget with HighLevel integration
- * Appears as a chat widget in bottom-right corner
+ * A customizable floating scheduling widget with timer, date selection, and configurable buttons
+ * 
+ * Features:
+ * - Floating chat-style widget
+ * - Optional countdown timer with progress bar
+ * - Dynamic date generation (next 5 days)
+ * - Configurable buttons with multiple action types
+ * - Starting position options (Open/Closed/Delayed Open)
+ * - Theme color customization
+ * - Font Awesome icons
+ * - No overlay - natural floating behavior
  */
 
-class SuperCalendarFloating {
-    constructor(config = {}) {
-        this.config = {
-            // HighLevel Integration
-            highlevelCalendarId: '', // HighLevel calendar ID
-            highlevelLocationId: '', // HighLevel location ID
-            highlevelApiKey: '', // HighLevel API key (if needed)
-            highlevelEmbedUrl: '', // Direct embed URL
+class SuperCalendar {
+    constructor(options = {}) {
+        this.options = {
+            // Profile Settings
+            profileName: options.profileName || 'Matt Deseno',
+            profileTitle: options.profileTitle || 'CEO @ HLPT',
+            profileAvatar: options.profileAvatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+            showOnlineIndicator: options.showOnlineIndicator !== false,
             
-            // Profile settings
-            profileName: 'Demo User',
-            profileTitle: 'Demo Title',
-            profileAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            showOnlineIndicator: true,
+            // Content Settings
+            mainHeading: options.mainHeading || 'HighLevel is Awesome — Until You Feel Lost In the Weeds',
+            mainDescription: options.mainDescription || 'Make HighLevel easy with HLPT. Save 10+ hours each week with a 24/7 team supporting you & your customers 🔥',
             
-            // Content settings
-            mainHeading: 'Your Funnel\'s Fine — Until the Calendar Kills It',
-            mainDescription: 'Fix your funnel with iClosed Scheduler. Saves leads drop-offs and filters out unqualified bookings 🔥',
+            // Timer Settings
+            enableTimer: options.enableTimer !== false,
+            timerDuration: options.timerDuration || 180, // seconds
+            timerText: options.timerText || 'Only few slots are left.',
             
-            // Timer settings
-            timerDuration: 180, // seconds
-            timerText: 'Only few slots are left.',
+            // Widget Behavior
+            startingPosition: options.startingPosition || 'closed', // 'open', 'closed', 'delayed'
+            delayTime: options.delayTime || 3, // seconds for delayed open
             
-            // Button configuration
-            buttons: [
+            // Button Configuration
+            buttons: options.buttons || [
                 {
-                    text: 'Schedule a demo',
+                    text: 'Schedule a Demo',
                     style: 'primary',
                     action: 'popup',
-                    url: '' // HighLevel popup - URL not needed for popup action
+                    url: 'https://your-calendar-url.com'
                 },
                 {
                     text: 'Start Free Trial',
                     style: 'secondary',
                     action: 'redirect',
-                    url: 'https://your-landing-page.com/trial'
+                    url: 'https://your-website.com/trial'
                 }
             ],
             
-            // Theme colors
-            primaryColor: '#1e3a8a',
-            progressBarColor: '#3b82f6',
+            // Theme Colors
+            primaryColor: options.primaryColor || '#1e3a8a',
+            progressBarColor: options.progressBarColor || '#3b82f6',
             
-            // Floating widget settings
-            position: 'bottom-right', // bottom-right, bottom-left
-            offsetX: 20, // pixels from edge
-            offsetY: 20, // pixels from edge
+            // Widget Position
+            position: options.position || 'bottom-right',
+            offsetX: options.offsetX || 20,
+            offsetY: options.offsetY || 20,
             
-            // Display options
-            showFooter: true,
-            poweredByText: 'Powered by iClosed',
-            
-            // Technical
-            source: 'super-calendar-floating',
-            
-            // Merge with provided config
-            ...config
+            // HighLevel Integration
+            highlevelEmbedUrl: options.highlevelEmbedUrl || '',
+            highlevelCalendarId: options.highlevelCalendarId || '',
+            highlevelLocationId: options.highlevelLocationId || ''
         };
         
-        this.currentTime = this.config.timerDuration;
-        this.timerInterval = null;
         this.isOpen = false;
-        this.container = null;
-        this.floatingButton = null;
-        this.widget = null;
+        this.timerInterval = null;
+        this.timeRemaining = this.options.timerDuration;
+        this.timerHidden = false;
+        
+        // Generate unique IDs
+        this.widgetId = 'super-calendar-' + Math.random().toString(36).substr(2, 9);
+        this.buttonId = 'super-calendar-btn-' + Math.random().toString(36).substr(2, 9);
     }
     
     init() {
-        console.log('Super Calendar Floating v4.0 initializing...');
-        
-        // Create floating container
-        this.createFloatingContainer();
-        
-        // Inject styles
         this.injectStyles();
-        
-        // Create floating button
-        this.createFloatingButton();
-        
-        // Create widget (hidden initially)
         this.createWidget();
+        this.bindEvents();
+        this.handleStartingPosition();
         
-        console.log('Super Calendar Floating v4.0 initialized successfully');
-    }
-    
-    createFloatingContainer() {
-        // Remove existing container
-        const existing = document.getElementById('super-calendar-floating-container');
-        if (existing) {
-            existing.remove();
+        // Auto-initialize if container exists
+        const container = document.querySelector('[data-super-calendar]');
+        if (container && !window.superCalendarInitialized) {
+            window.superCalendarInitialized = true;
         }
         
-        this.container = document.createElement('div');
-        this.container.id = 'super-calendar-floating-container';
-        this.container.className = 'super-calendar-floating-container';
-        
-        document.body.appendChild(this.container);
+        console.log('Super Calendar initialized');
     }
     
     injectStyles() {
-        // Remove existing styles
-        const existingStyles = document.getElementById('super-calendar-floating-styles');
-        if (existingStyles) {
-            existingStyles.remove();
-        }
+        if (document.getElementById('super-calendar-styles')) return;
         
-        const styles = document.createElement('style');
-        styles.id = 'super-calendar-floating-styles';
-        styles.textContent = `
-            .super-calendar-floating-container {
-                position: fixed;
-                ${this.config.position.includes('bottom') ? 'bottom' : 'top'}: ${this.config.offsetY}px;
-                ${this.config.position.includes('right') ? 'right' : 'left'}: ${this.config.offsetX}px;
-                z-index: 10000;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            }
-            
+        const style = document.createElement('style');
+        style.id = 'super-calendar-styles';
+        style.textContent = `
             .super-calendar-floating-button {
+                position: fixed;
+                ${this.options.position.includes('bottom') ? 'bottom' : 'top'}: ${this.options.offsetY}px;
+                ${this.options.position.includes('right') ? 'right' : 'left'}: ${this.options.offsetX}px;
                 width: 60px;
                 height: 60px;
-                border-radius: 50%;
-                background: ${this.config.primaryColor};
-                color: white;
+                background: linear-gradient(135deg, ${this.options.primaryColor}, ${this.options.primaryColor}dd);
                 border: none;
+                border-radius: 50%;
+                color: white;
+                font-size: 1.5rem;
                 cursor: pointer;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                transition: all 0.3s ease;
+                z-index: 1000;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 24px;
-                transition: all 0.3s ease;
-                position: relative;
-                overflow: hidden;
+                font-family: 'Font Awesome 6 Free', sans-serif;
             }
             
             .super-calendar-floating-button:hover {
                 transform: scale(1.1);
-                box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
             }
             
-            .super-calendar-floating-button.open {
-                background: #374151;
-            }
-            
-            .super-calendar-floating-widget {
-                position: absolute;
-                bottom: 70px;
-                right: 0;
+            .super-calendar-widget {
+                position: fixed;
+                ${this.options.position.includes('bottom') ? 'bottom' : 'top'}: ${this.options.offsetY + 80}px;
+                ${this.options.position.includes('right') ? 'right' : 'left'}: ${this.options.offsetX}px;
                 width: 380px;
                 max-width: calc(100vw - 40px);
                 background: white;
                 border-radius: 16px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-                border: 1px solid #e5e7eb;
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-                transition: all 0.3s ease;
-                pointer-events: none;
-                overflow: hidden;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                z-index: 1001;
+                display: none;
+                animation: slideUp 0.3s ease;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             }
             
-            .super-calendar-floating-widget.open {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-                pointer-events: all;
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
             }
             
-            .super-calendar-floating-widget * {
-                box-sizing: border-box;
+            .super-calendar-content {
+                padding: 1.5rem;
             }
             
-            .super-calendar-floating-widget .profile-section {
-                padding: 20px 20px 16px 20px;
-                border-bottom: 1px solid #f3f4f6;
-            }
-            
-            .super-calendar-floating-widget .profile-info {
+            .super-calendar-header {
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                margin-bottom: 1rem;
             }
             
-            .super-calendar-floating-widget .profile-avatar {
+            .super-calendar-profile {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                flex: 1;
+            }
+            
+            .super-calendar-avatar {
                 position: relative;
-                width: 44px;
-                height: 44px;
-                border-radius: 50%;
-                overflow: hidden;
-                flex-shrink: 0;
             }
             
-            .super-calendar-floating-widget .profile-avatar img {
-                width: 100%;
-                height: 100%;
+            .super-calendar-avatar img {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
                 object-fit: cover;
             }
             
-            .super-calendar-floating-widget .online-indicator {
+            .super-calendar-online {
                 position: absolute;
-                bottom: 2px;
-                right: 2px;
-                width: 10px;
-                height: 10px;
+                bottom: 0;
+                right: 0;
+                width: 12px;
+                height: 12px;
                 background: #10b981;
                 border: 2px solid white;
                 border-radius: 50%;
             }
             
-            .super-calendar-floating-widget .profile-details h3 {
-                margin: 0;
-                font-size: 15px;
+            .super-calendar-profile-info {
+                flex: 1;
+            }
+            
+            .super-calendar-name {
                 font-weight: 600;
-                color: #111827;
-                line-height: 1.2;
+                color: #1a202c;
+                font-size: 0.9rem;
+                margin: 0;
             }
             
-            .super-calendar-floating-widget .profile-details p {
-                margin: 2px 0 0 0;
-                font-size: 13px;
+            .super-calendar-title {
                 color: #6b7280;
-                line-height: 1.2;
+                font-size: 0.8rem;
+                margin: 0;
             }
             
-            .super-calendar-floating-widget .content-section {
-                padding: 20px;
+            .super-calendar-close {
+                background: none;
+                border: none;
+                font-size: 1.2rem;
+                cursor: pointer;
+                color: #6b7280;
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: background-color 0.2s ease;
             }
             
-            .super-calendar-floating-widget .main-heading {
-                margin: 0 0 10px 0;
-                font-size: 18px;
-                font-weight: 700;
-                color: #111827;
+            .super-calendar-close:hover {
+                background-color: #f3f4f6;
+            }
+            
+            .super-calendar-heading {
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: #1a202c;
+                margin: 0 0 0.5rem 0;
                 line-height: 1.3;
             }
             
-            .super-calendar-floating-widget .main-description {
-                margin: 0 0 20px 0;
-                font-size: 13px;
-                color: #6b7280;
+            .super-calendar-description {
+                color: #4a5568;
+                margin: 0 0 1rem 0;
+                font-size: 0.9rem;
                 line-height: 1.4;
             }
             
-            .super-calendar-floating-widget .timer-section {
-                background: #f3f4f6;
-                border-radius: 10px;
-                padding: 14px;
-                margin-bottom: 20px;
+            .super-calendar-timer {
+                background: #f7fafc;
+                border: 1px solid #e2e8f0;
+                border-radius: 8px;
+                padding: 1rem;
+                margin-bottom: 1rem;
                 position: relative;
                 overflow: hidden;
-                transition: opacity 0.5s ease, height 0.5s ease, margin 0.5s ease;
+                transition: all 0.5s ease;
             }
             
-            .super-calendar-floating-widget .progress-bar {
+            .super-calendar-timer.hidden {
+                opacity: 0;
+                height: 0;
+                padding: 0;
+                margin: 0;
+                overflow: hidden;
+            }
+            
+            .super-calendar-progress {
                 position: absolute;
                 top: 0;
                 left: 0;
-                right: 0;
-                height: 3px;
-                background: #e5e7eb;
-                overflow: hidden;
+                height: 4px;
+                background: linear-gradient(90deg, ${this.options.progressBarColor}, ${this.options.progressBarColor}aa);
+                transition: width 1s ease;
             }
             
-            .super-calendar-floating-widget .progress-fill {
-                height: 100%;
-                background: linear-gradient(135deg, ${this.config.primaryColor} 0%, ${this.config.progressBarColor} 100%);
-                transition: width 1s linear;
-                border-radius: 0;
-            }
-            
-            .super-calendar-floating-widget .timer-content {
+            .super-calendar-timer-content {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding-top: 3px;
+                margin-top: 0.25rem;
             }
             
-            .super-calendar-floating-widget .timer-text {
-                font-size: 14px;
+            .super-calendar-timer-text {
+                font-weight: 500;
+                color: #4a5568;
+            }
+            
+            .super-calendar-timer-countdown {
                 font-weight: 600;
-                color: #374151;
+                color: #1a202c;
+                font-family: monospace;
             }
             
-            .super-calendar-floating-widget .timer-display {
-                font-size: 18px;
-                font-weight: 700;
-                font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-                color: #111827;
+            .super-calendar-dates {
+                display: flex;
+                gap: 0.5rem;
+                margin-bottom: 1rem;
+                flex-wrap: nowrap;
             }
             
-            .super-calendar-floating-widget .dates-section {
-                margin-bottom: 20px;
-            }
-            
-            .super-calendar-floating-widget .dates-grid {
-                display: grid;
-                grid-template-columns: repeat(5, 1fr);
-                gap: 6px;
-            }
-            
-            .super-calendar-floating-widget .date-button {
+            .super-calendar-date {
+                flex: 1;
+                min-width: 50px;
+                max-width: 65px;
+                padding: 0.75rem 0.25rem;
+                border: 2px solid #e2e8f0;
                 background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 10px;
-                padding: 10px 6px;
-                text-align: center;
+                color: #4a5568;
+                border-radius: 8px;
+                font-size: 0.75rem;
+                font-weight: 500;
                 cursor: pointer;
+                white-space: pre-line;
+                line-height: 1.2;
                 transition: all 0.2s ease;
-                font-size: 13px;
             }
             
-            .super-calendar-floating-widget .date-button:hover {
-                border-color: ${this.config.primaryColor};
-                background: #f8fafc;
-                transform: translateY(-1px);
+            .super-calendar-date:hover {
+                border-color: ${this.options.primaryColor};
+                background-color: ${this.options.primaryColor}10;
             }
             
-            .super-calendar-floating-widget .date-button .day {
-                font-weight: 600;
-                font-size: 11px;
-                text-transform: uppercase;
-                margin-bottom: 3px;
-                opacity: 0.8;
-                color: #6b7280;
+            .super-calendar-date.selected {
+                border-color: ${this.options.primaryColor};
+                background: ${this.options.primaryColor};
+                color: white;
             }
             
-            .super-calendar-floating-widget .date-button .date {
-                font-weight: 700;
-                font-size: 16px;
-                color: #111827;
-            }
-            
-            .super-calendar-floating-widget .buttons-section {
+            .super-calendar-buttons {
                 display: flex;
                 flex-direction: column;
-                gap: 10px;
+                gap: 0.75rem;
             }
             
-            .super-calendar-floating-widget .action-button {
+            .super-calendar-button {
                 width: 100%;
-                padding: 14px 20px;
-                border-radius: 10px;
-                font-size: 15px;
+                padding: 0.875rem;
+                border-radius: 8px;
                 font-weight: 600;
-                text-align: center;
                 cursor: pointer;
                 transition: all 0.2s ease;
-                text-decoration: none;
-                display: inline-block;
-                border: none;
-                font-family: inherit;
+                font-size: 0.9rem;
             }
             
-            .super-calendar-floating-widget .action-button.primary {
-                background: ${this.config.primaryColor};
+            .super-calendar-button.primary {
+                border: 2px solid ${this.options.primaryColor};
+                background: ${this.options.primaryColor};
                 color: white;
-                border: 2px solid ${this.config.primaryColor};
             }
             
-            .super-calendar-floating-widget .action-button.primary:hover {
-                background: #1e40af;
-                border-color: #1e40af;
+            .super-calendar-button.primary:hover {
+                background: ${this.options.primaryColor}dd;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.3);
             }
             
-            .super-calendar-floating-widget .action-button.secondary {
+            .super-calendar-button.secondary {
+                border: 2px solid ${this.options.primaryColor};
                 background: white;
-                color: ${this.config.primaryColor};
-                border: 2px solid ${this.config.primaryColor};
+                color: ${this.options.primaryColor};
             }
             
-            .super-calendar-floating-widget .action-button.secondary:hover {
-                background: ${this.config.primaryColor};
-                color: white;
+            .super-calendar-button.secondary:hover {
+                background: ${this.options.primaryColor}10;
                 transform: translateY(-1px);
-                box-shadow: 0 4px 12px rgba(30, 58, 138, 0.2);
             }
             
-            .super-calendar-floating-widget .footer {
-                padding: 12px 20px;
-                text-align: center;
-                border-top: 1px solid #f3f4f6;
-                background: #fafafa;
-            }
-            
-            .super-calendar-floating-widget .footer p {
-                margin: 0;
-                font-size: 11px;
-                color: #9ca3af;
-            }
-            
-            /* Mobile responsive */
             @media (max-width: 480px) {
-                .super-calendar-floating-container {
-                    right: 10px !important;
-                    bottom: 10px !important;
-                }
-                
-                .super-calendar-floating-widget {
+                .super-calendar-widget {
                     width: calc(100vw - 20px);
-                    right: -10px;
+                    right: 10px;
+                    left: 10px;
                 }
             }
-            
-            /* Calendar and chevron icons */
-            .calendar-icon {
-                width: 28px;
-                height: 28px;
-                fill: currentColor;
-            }
-            
-            .chevron-icon {
-                width: 20px;
-                height: 20px;
-                fill: currentColor;
-                transform: rotate(180deg);
-            }
         `;
         
-        document.head.appendChild(styles);
-    }
-    
-    createFloatingButton() {
-        this.floatingButton = document.createElement('button');
-        this.floatingButton.className = 'super-calendar-floating-button';
-        this.floatingButton.innerHTML = `
-            <svg class="calendar-icon" viewBox="0 0 24 24">
-                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-            </svg>
-        `;
+        document.head.appendChild(style);
         
-        this.floatingButton.addEventListener('click', () => {
-            this.toggle();
-        });
-        
-        this.container.appendChild(this.floatingButton);
+        // Load Font Awesome if not already loaded
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const fontAwesome = document.createElement('link');
+            fontAwesome.rel = 'stylesheet';
+            fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+            document.head.appendChild(fontAwesome);
+        }
     }
     
     createWidget() {
-        this.widget = document.createElement('div');
-        this.widget.className = 'super-calendar-floating-widget';
+        // Create floating button
+        const button = document.createElement('button');
+        button.id = this.buttonId;
+        button.className = 'super-calendar-floating-button';
+        button.innerHTML = '<i class="fas fa-calendar"></i>';
         
+        // Create widget container
+        const widget = document.createElement('div');
+        widget.id = this.widgetId;
+        widget.className = 'super-calendar-widget';
+        
+        // Generate dates
         const dates = this.generateDates();
-        const buttonsHtml = this.config.buttons.map((button, index) => 
-            `<button class="action-button ${button.style}" data-action="${button.action}" data-url="${button.url || ''}" data-button-index="${index}">
-                ${button.text}
-            </button>`
-        ).join('');
         
-        this.widget.innerHTML = `
-            <div class="profile-section">
-                <div class="profile-info">
-                    <div class="profile-avatar">
-                        <img src="${this.config.profileAvatar}" alt="${this.config.profileName}">
-                        ${this.config.showOnlineIndicator ? '<div class="online-indicator"></div>' : ''}
+        widget.innerHTML = `
+            <div class="super-calendar-content">
+                <div class="super-calendar-header">
+                    <div class="super-calendar-profile">
+                        <div class="super-calendar-avatar">
+                            <img src="${this.options.profileAvatar}" alt="${this.options.profileName}">
+                            ${this.options.showOnlineIndicator ? '<div class="super-calendar-online"></div>' : ''}
+                        </div>
+                        <div class="super-calendar-profile-info">
+                            <div class="super-calendar-name">${this.options.profileName}</div>
+                            <div class="super-calendar-title">${this.options.profileTitle}</div>
+                        </div>
                     </div>
-                    <div class="profile-details">
-                        <h3>${this.config.profileName}</h3>
-                        <p>${this.config.profileTitle}</p>
+                    <button class="super-calendar-close">×</button>
+                </div>
+                
+                <h3 class="super-calendar-heading">${this.options.mainHeading}</h3>
+                <p class="super-calendar-description">${this.options.mainDescription}</p>
+                
+                ${this.options.enableTimer ? `
+                <div class="super-calendar-timer">
+                    <div class="super-calendar-progress" style="width: 100%;"></div>
+                    <div class="super-calendar-timer-content">
+                        <span class="super-calendar-timer-text">${this.options.timerText}</span>
+                        <span class="super-calendar-timer-countdown">${this.formatTime(this.timeRemaining)}</span>
                     </div>
+                </div>
+                ` : ''}
+                
+                <div class="super-calendar-dates">
+                    ${dates.map((date, index) => `
+                        <button class="super-calendar-date ${index === 0 ? 'selected' : ''}" data-date="${date.full}">
+                            ${date.day}<br>${date.date}
+                        </button>
+                    `).join('')}
+                </div>
+                
+                <div class="super-calendar-buttons">
+                    ${this.options.buttons.map(button => `
+                        <button class="super-calendar-button ${button.style}" 
+                                data-action="${button.action}" 
+                                data-url="${button.url || ''}">
+                            ${button.text}
+                        </button>
+                    `).join('')}
                 </div>
             </div>
-            
-            <div class="content-section">
-                <h2 class="main-heading">${this.config.mainHeading}</h2>
-                <p class="main-description">${this.config.mainDescription}</p>
-                
-                <div class="timer-section" id="super-calendar-timer-${this.config.source}">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill-${this.config.source}" style="width: 100%;"></div>
-                    </div>
-                    <div class="timer-content">
-                        <span class="timer-text">${this.config.timerText}</span>
-                        <span class="timer-display" id="timer-display-${this.config.source}">03:00</span>
-                    </div>
-                </div>
-                
-                <div class="dates-section">
-                    <div class="dates-grid">
-                        ${dates.map((date, index) => `
-                            <div class="date-button" data-date="${date.full}">
-                                <div class="day">${date.day}</div>
-                                <div class="date">${date.date}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <div class="buttons-section">
-                    ${buttonsHtml}
-                </div>
-            </div>
-            
-            ${this.config.showFooter ? `
-                <div class="footer">
-                    <p>${this.config.poweredByText}</p>
-                </div>
-            ` : ''}
         `;
         
-        this.container.appendChild(this.widget);
-        this.bindEvents();
+        document.body.appendChild(button);
+        document.body.appendChild(widget);
+        
+        this.button = button;
+        this.widget = widget;
+    }
+    
+    bindEvents() {
+        // Floating button click
+        this.button.addEventListener('click', () => this.toggle());
+        
+        // Close button click
+        this.widget.querySelector('.super-calendar-close').addEventListener('click', () => this.close());
+        
+        // Date button clicks
+        this.widget.querySelectorAll('.super-calendar-date').forEach(dateBtn => {
+            dateBtn.addEventListener('click', (e) => {
+                // Remove selected class from all dates
+                this.widget.querySelectorAll('.super-calendar-date').forEach(btn => btn.classList.remove('selected'));
+                // Add selected class to clicked date
+                e.target.classList.add('selected');
+                // Trigger action
+                this.handleDateClick(e.target.dataset.date);
+            });
+        });
+        
+        // Action button clicks
+        this.widget.querySelectorAll('.super-calendar-button').forEach(actionBtn => {
+            actionBtn.addEventListener('click', (e) => {
+                const action = e.target.dataset.action;
+                const url = e.target.dataset.url;
+                this.handleButtonClick(action, url);
+            });
+        });
+        
+        // Start timer if enabled
+        if (this.options.enableTimer) {
+            this.startTimer();
+        }
+    }
+    
+    handleStartingPosition() {
+        switch (this.options.startingPosition) {
+            case 'open':
+                setTimeout(() => this.open(), 100);
+                break;
+            case 'delayed':
+                setTimeout(() => this.open(), this.options.delayTime * 1000);
+                break;
+            case 'closed':
+            default:
+                // Widget starts closed
+                break;
+        }
     }
     
     generateDates() {
@@ -530,139 +516,44 @@ class SuperCalendarFloating {
         return dates;
     }
     
-    bindEvents() {
-        // Date selection - all dates trigger HighLevel popup
-        const dateButtons = this.widget.querySelectorAll('.date-button');
-        dateButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                console.log('Super Calendar: Date selected:', button.dataset.date);
-                this.openHighLevelCalendar(button.dataset.date);
-            });
-        });
-        
-        // Button actions - handle based on action type
-        const actionButtons = this.widget.querySelectorAll('.action-button');
-        actionButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const action = button.dataset.action;
-                const url = button.dataset.url;
-                const buttonIndex = button.dataset.buttonIndex;
-                
-                console.log('Super Calendar: Button clicked:', { action, url, buttonIndex });
-                
-                // Handle different action types
-                switch (action) {
-                    case 'popup':
-                        // Popup action opens HighLevel calendar
-                        this.openHighLevelCalendar();
-                        break;
-                        
-                    case 'redirect':
-                        // Redirect to custom URL
-                        if (url) {
-                            window.location.href = url;
-                        }
-                        break;
-                        
-                    case 'new-tab':
-                        // Open custom URL in new tab
-                        if (url) {
-                            window.open(url, '_blank');
-                        }
-                        break;
-                        
-                    case 'highlevel':
-                        // Legacy support - opens HighLevel calendar
-                        this.openHighLevelCalendar();
-                        break;
-                        
-                    default:
-                        console.warn(`Super Calendar: Unknown action type: ${action}`);
-                }
-            });
-        });
-        
-        // Close widget when clicking outside
-        document.addEventListener('click', (e) => {
-            if (this.isOpen && !this.container.contains(e.target)) {
-                this.close();
-            }
-        });
-        
-        // Escape key to close
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.close();
-            }
-        });
+    formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     
-    openHighLevelCalendar(selectedDate = null) {
-        console.log('Opening HighLevel calendar...', { selectedDate });
-        
-        // Method 1: Direct embed URL
-        if (this.config.highlevelEmbedUrl) {
-            let url = this.config.highlevelEmbedUrl;
+    startTimer() {
+        this.timerInterval = setInterval(() => {
+            this.timeRemaining--;
             
-            // Add selected date as parameter if provided
-            if (selectedDate) {
-                const separator = url.includes('?') ? '&' : '?';
-                url += `${separator}date=${selectedDate}`;
+            const countdown = this.widget.querySelector('.super-calendar-timer-countdown');
+            const progress = this.widget.querySelector('.super-calendar-progress');
+            
+            if (countdown) {
+                countdown.textContent = this.formatTime(this.timeRemaining);
             }
             
-            this.openPopup(url, 'HighLevel Calendar');
-            return;
-        }
-        
-        // Method 2: HighLevel widget API
-        if (this.config.highlevelCalendarId) {
-            const baseUrl = 'https://api.leadconnectorhq.com/widget/booking';
-            let url = `${baseUrl}/${this.config.highlevelCalendarId}`;
-            
-            if (this.config.highlevelLocationId) {
-                url += `?locationId=${this.config.highlevelLocationId}`;
+            if (progress) {
+                const percentage = (this.timeRemaining / this.options.timerDuration) * 100;
+                progress.style.width = `${Math.max(0, percentage)}%`;
             }
             
-            if (selectedDate) {
-                const separator = url.includes('?') ? '&' : '?';
-                url += `${separator}date=${selectedDate}`;
+            if (this.timeRemaining <= 0) {
+                this.hideTimer();
             }
-            
-            this.openPopup(url, 'HighLevel Calendar');
-            return;
-        }
-        
-        // Method 3: HighLevel iframe embed
-        if (window.HighLevelCalendar) {
-            window.HighLevelCalendar.open({
-                calendarId: this.config.highlevelCalendarId,
-                locationId: this.config.highlevelLocationId,
-                selectedDate: selectedDate
-            });
-            return;
-        }
-        
-        // Fallback: Generic popup
-        console.warn('HighLevel configuration not found, using fallback');
-        this.openPopup('https://your-highlevel-calendar.com', 'Schedule Appointment');
+        }, 1000);
     }
     
-    openPopup(url, title = 'Calendar') {
-        const popup = window.open(
-            url,
-            title.replace(/\s+/g, '-').toLowerCase(),
-            'width=800,height=700,scrollbars=yes,resizable=yes,centerscreen=yes'
-        );
+    hideTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
         
-        if (popup) {
-            popup.focus();
-            // Close widget after opening popup
-            this.close();
-        } else {
-            // Popup blocked, try redirect
-            console.warn('Popup blocked, redirecting...');
-            window.location.href = url;
+        const timer = this.widget.querySelector('.super-calendar-timer');
+        if (timer && !this.timerHidden) {
+            timer.classList.add('hidden');
+            this.timerHidden = true;
         }
     }
     
@@ -675,91 +566,67 @@ class SuperCalendarFloating {
     }
     
     open() {
-        if (this.isOpen) return;
-        
+        this.widget.style.display = 'block';
+        this.button.innerHTML = '<i class="fas fa-chevron-down"></i>';
         this.isOpen = true;
-        this.widget.classList.add('open');
-        this.floatingButton.classList.add('open');
-        
-        // Change icon to chevron down
-        this.floatingButton.innerHTML = `
-            <svg class="chevron-icon" viewBox="0 0 24 24">
-                <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/>
-            </svg>
-        `;
-        
-        // Start timer
-        this.startTimer();
-        
-        console.log('Super Calendar: Widget opened');
     }
     
     close() {
-        if (!this.isOpen) return;
-        
+        this.widget.style.display = 'none';
+        this.button.innerHTML = '<i class="fas fa-calendar"></i>';
         this.isOpen = false;
-        this.widget.classList.remove('open');
-        this.floatingButton.classList.remove('open');
-        
-        // Change icon back to calendar
-        this.floatingButton.innerHTML = `
-            <svg class="calendar-icon" viewBox="0 0 24 24">
-                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-            </svg>
-        `;
-        
-        // Stop timer
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
-            this.timerInterval = null;
-        }
-        
-        console.log('Super Calendar: Widget closed');
     }
     
-    startTimer() {
-        if (this.timerInterval) {
-            clearInterval(this.timerInterval);
+    handleDateClick(date) {
+        console.log('Date clicked:', date);
+        this.openHighLevelCalendar();
+    }
+    
+    handleButtonClick(action, url) {
+        console.log('Button clicked:', action, url);
+        
+        switch (action) {
+            case 'popup':
+                this.openHighLevelCalendar();
+                break;
+            case 'redirect':
+                if (url) {
+                    window.location.href = url;
+                }
+                break;
+            case 'new-tab':
+                if (url) {
+                    window.open(url, '_blank');
+                }
+                break;
+            default:
+                console.log('Unknown action:', action);
+        }
+    }
+    
+    openHighLevelCalendar() {
+        // Method 1: Direct embed URL
+        if (this.options.highlevelEmbedUrl) {
+            window.open(this.options.highlevelEmbedUrl, 'highlevel-calendar', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            return;
         }
         
-        this.currentTime = this.config.timerDuration;
-        const timerDisplay = document.getElementById(`timer-display-${this.config.source}`);
-        const progressFill = document.getElementById(`progress-fill-${this.config.source}`);
+        // Method 2: HighLevel Calendar API
+        if (this.options.highlevelCalendarId && this.options.highlevelLocationId) {
+            const calendarUrl = `https://api.leadconnectorhq.com/widget/booking/${this.options.highlevelCalendarId}?location_id=${this.options.highlevelLocationId}`;
+            window.open(calendarUrl, 'highlevel-calendar', 'width=800,height=600,scrollbars=yes,resizable=yes');
+            return;
+        }
         
-        if (!timerDisplay || !progressFill) return;
+        // Method 3: Check for HighLevel widget on page
+        if (window.HighLevelCalendar && typeof window.HighLevelCalendar.open === 'function') {
+            window.HighLevelCalendar.open();
+            return;
+        }
         
-        this.timerInterval = setInterval(() => {
-            this.currentTime--;
-            
-            const minutes = Math.floor(this.currentTime / 60);
-            const seconds = this.currentTime % 60;
-            
-            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            
-            const percentage = (this.currentTime / this.config.timerDuration) * 100;
-            progressFill.style.width = `${Math.max(0, percentage)}%`;
-            
-            if (this.currentTime <= 0) {
-                // Hide timer section when countdown reaches zero
-                const timerSection = document.querySelector(`#super-calendar-timer-${this.config.source}`);
-                if (timerSection) {
-                    timerSection.style.transition = 'opacity 0.5s ease, height 0.5s ease, margin 0.5s ease';
-                    timerSection.style.opacity = '0';
-                    timerSection.style.height = '0';
-                    timerSection.style.marginBottom = '0';
-                    timerSection.style.overflow = 'hidden';
-                    
-                    // Completely hide after animation
-                    setTimeout(() => {
-                        timerSection.style.display = 'none';
-                    }, 500);
-                }
-                
-                // Stop the timer
-                clearInterval(this.timerInterval);
-                this.timerInterval = null;
-            }
-        }, 1000);
+        // Fallback: Alert user to configure HighLevel integration
+        console.log('HighLevel calendar integration not configured. Please set highlevelEmbedUrl or highlevelCalendarId/highlevelLocationId options.');
+        alert('Please configure your calendar booking system.');
     }
     
     destroy() {
@@ -767,47 +634,54 @@ class SuperCalendarFloating {
             clearInterval(this.timerInterval);
         }
         
-        if (this.container) {
-            this.container.remove();
+        if (this.button) {
+            this.button.remove();
         }
         
-        const styles = document.getElementById('super-calendar-floating-styles');
+        if (this.widget) {
+            this.widget.remove();
+        }
+        
+        const styles = document.getElementById('super-calendar-styles');
         if (styles) {
             styles.remove();
         }
-        
-        console.log('Super Calendar Floating: Widget destroyed');
     }
 }
 
-// Auto-initialization for data attributes
-document.addEventListener('DOMContentLoaded', () => {
-    const autoInitElements = document.querySelectorAll('[data-super-calendar-floating]');
-    
-    autoInitElements.forEach(element => {
-        try {
-            const config = JSON.parse(element.dataset.superCalendarFloating || '{}');
-            
-            const widget = new SuperCalendarFloating(config);
-            widget.init();
-            
-            // Store instance for later access
-            element.superCalendarFloatingInstance = widget;
-        } catch (error) {
-            console.error('Super Calendar Floating: Auto-initialization failed', error);
-        }
+// Auto-initialize if data attribute is found
+document.addEventListener('DOMContentLoaded', function() {
+    const containers = document.querySelectorAll('[data-super-calendar]');
+    containers.forEach(container => {
+        const options = {};
+        
+        // Parse data attributes
+        Object.keys(container.dataset).forEach(key => {
+            if (key.startsWith('superCalendar')) {
+                const optionKey = key.replace('superCalendar', '').toLowerCase();
+                let value = container.dataset[key];
+                
+                // Parse boolean values
+                if (value === 'true') value = true;
+                if (value === 'false') value = false;
+                
+                // Parse numbers
+                if (!isNaN(value) && value !== '') value = Number(value);
+                
+                options[optionKey] = value;
+            }
+        });
+        
+        const widget = new SuperCalendar(options);
+        widget.init();
     });
 });
 
 // Global access
-if (typeof window !== 'undefined') {
-    window.SuperCalendarFloating = SuperCalendarFloating;
-}
+window.SuperCalendar = SuperCalendar;
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SuperCalendarFloating;
+    module.exports = SuperCalendar;
 }
-
-console.log('Super Calendar Floating v4.0 script loaded successfully');
 

@@ -39,6 +39,16 @@ class SuperCalendar {
     }
 
     injectStyles() {
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const fontAwesome = document.createElement('link');
+            fontAwesome.rel = 'stylesheet';
+            fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+            fontAwesome.integrity = 'sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==';
+            fontAwesome.crossOrigin = 'anonymous';
+            fontAwesome.referrerPolicy = 'no-referrer';
+            document.head.appendChild(fontAwesome);
+        }
+        
         const style = document.createElement('style');
         style.textContent = `
             :root {
@@ -78,6 +88,34 @@ class SuperCalendar {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                position: relative;
+            }
+            
+            .super-calendar-toggle i {
+                position: absolute;
+                transition: opacity 0.3s ease, transform 0.3s ease;
+            }
+            
+            /* When widget is closed - show calendar icon */
+            .super-calendar-widget.closed .super-calendar-toggle .fa-calendar-alt {
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+            
+            .super-calendar-widget.closed .super-calendar-toggle .fa-chevron-down {
+                opacity: 0;
+                transform: rotate(0deg);
+            }
+            
+            /* When widget is open - show chevron-down icon */
+            .super-calendar-widget:not(.closed) .super-calendar-toggle .fa-calendar-alt {
+                opacity: 0;
+                transform: rotate(0deg);
+            }
+            
+            .super-calendar-widget:not(.closed) .super-calendar-toggle .fa-chevron-down {
+                opacity: 1;
+                transform: rotate(0deg);
             }
             
             .super-calendar-toggle:hover {
@@ -116,10 +154,11 @@ class SuperCalendar {
                 height: 30px;
                 color: white;
                 cursor: pointer;
-                font-size: 16px;
+                font-size: 14px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                line-height: 1;
             }
             
             .super-calendar-profile {
@@ -216,7 +255,7 @@ class SuperCalendar {
             
             .super-calendar-dates {
                 display: flex;
-                gap: 8px;
+                gap: 7px;
                 margin-bottom: 16px;
                 overflow-x: auto;
                 padding-bottom: 4px;
@@ -394,7 +433,7 @@ class SuperCalendar {
         widget.innerHTML = `
             <div class="super-calendar-content">
                 <div class="super-calendar-header">
-                    <button class="super-calendar-close">&times;</button>
+                    <button class="super-calendar-close"><span class="fas fa-times"></span></button>
                     <div class="super-calendar-profile">
                         <div class="super-calendar-avatar">
                             <img src="${this.config.profileAvatar}" alt="${this.config.profileName}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
@@ -418,20 +457,19 @@ class SuperCalendar {
             </div>
             <button class="super-calendar-toggle">
                 <i class="fas fa-calendar-alt"></i>
+                <i class="fas fa-chevron-down"></i>
             </button>
         `;
         
         document.body.appendChild(widget);
         this.widget = widget;
         
-        // Add event listeners
         const toggle = widget.querySelector('.super-calendar-toggle');
         const close = widget.querySelector('.super-calendar-close');
         
         toggle.addEventListener('click', () => this.toggleWidget());
         close.addEventListener('click', () => this.closeWidget());
         
-        // Add button event listeners
         const buttons = widget.querySelectorAll('.super-calendar-button');
         buttons.forEach(button => {
             button.addEventListener('click', (e) => {
@@ -440,6 +478,13 @@ class SuperCalendar {
                 const url = button.getAttribute('data-url');
                 const calendarUrl = button.getAttribute('data-calendar-url');
                 this.handleButtonClick(action, url, calendarUrl);
+            });
+        });
+        
+        const dateElements = widget.querySelectorAll('.super-calendar-date');
+        dateElements.forEach(dateElement => {
+            dateElement.addEventListener('click', () => {
+                this.handleDateClick();
             });
         });
         
@@ -461,7 +506,6 @@ class SuperCalendar {
         document.body.appendChild(modal);
         this.modal = modal;
         
-        // Add close event listeners
         const closeBtn = modal.querySelector('.super-calendar-modal-close');
         closeBtn.addEventListener('click', () => this.closeModal());
         
@@ -572,12 +616,24 @@ class SuperCalendar {
         }
     }
 
+    handleDateClick() {
+        const primaryButton = this.config.buttons[0];
+        
+        if (primaryButton) {
+            this.handleButtonClick(
+                primaryButton.action,
+                primaryButton.url || '',
+                primaryButton.calendarUrl || ''
+            );
+        } else {
+            console.warn('No buttons configured for date click action');
+        }
+    }
+
     openModal(calendarUrl) {
         const iframe = this.modal.querySelector('iframe');
         iframe.src = calendarUrl;
-        this.modal.classList.add('show');
-        
-        // Prevent body scroll when modal is open
+        this.modal.classList.add('show');        
         document.body.style.overflow = 'hidden';
     }
 
@@ -585,7 +641,6 @@ class SuperCalendar {
         this.modal.classList.remove('show');
         document.body.style.overflow = '';
         
-        // Clear iframe src to stop any ongoing requests
         const iframe = this.modal.querySelector('iframe');
         iframe.src = '';
     }
@@ -631,14 +686,16 @@ class SuperCalendar {
             this.modal.remove();
         }
         
-        // Restore body scroll
         document.body.style.overflow = '';
     }
 }
 
-// Auto-initialize if config is provided
+if (typeof window !== 'undefined') {
+    window.SuperCalendar = SuperCalendar;
+}
+
 if (typeof window !== 'undefined' && window.superCalendarConfig) {
     const widget = new SuperCalendar(window.superCalendarConfig);
     widget.init();
 }
-
+// console.log('Super Calendar Widget loaded');
